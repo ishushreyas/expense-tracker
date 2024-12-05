@@ -31,7 +31,7 @@ function ExpenseTracker() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "http://192.0.0.2:3000/api";
+  const API_BASE_URL = "/api";
 
   // Improved Error Handling Function
   const handleApiError = (errorMessage, context) => {
