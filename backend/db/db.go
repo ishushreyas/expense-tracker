@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,9 +15,15 @@ var Pool *pgxpool.Pool
 
 func InitDatabase() error {
 	// Read database connection URL from environment or use default
+	if os.Getenv("RENDER_SERVICE_ID") == "" { // (Render sets RENDER_SERVICE_ID in production)
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("env not found in RENDER development")
+		}
+	}
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
-		connStr = "postgresql://neondb_owner:KUSF3kZJl5tQ@ep-little-wave-a1c7wacg.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+		log.Panic("error getting db url")	
 	}
 
 	// Create connection pool
