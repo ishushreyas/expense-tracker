@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#121212">
+    <title>Nakama - Offline</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-primary: #121212;
+            --text-primary: #ffffff;
+            --accent-color: #bb86fc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        main {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            color: var(--accent-color);
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            font: inherit;
+            height: 3rem;
+            padding: 0 1.5rem;
+            border-radius: 1.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background-color: #9768d1;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 480px) {
+            main {
+                padding: 1.5rem;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Connection Lost</h1>
+        <p>You seem to be offline. Check your internet connection and try reloading.</p>
+        <button aria-label="Reload Page">Reload</button>
+    </main>
+
+    <script>
+        const button = document.querySelector('button');
+        const reloadPage = () => window.location.reload();
+
+        button.addEventListener('click', reloadPage);
+        window.addEventListener('online', reloadPage);
+
+        async function checkNetworkAndReload() {
+            try {
+                const response = await fetch('.', { 
+                    method: 'HEAD',
+                    cache: 'no-store' 
+                });
+                if (response.ok) {
+                    window.location.reload();
+                    return;
+                }
+            } catch { }
+            
+            // Exponential backoff with max delay
+            const delay = Math.min(2500 * Math.pow(1.5, window.retryCount || 0), 30000);
+            window.retryCount = (window.retryCount || 0) + 1;
+            
+            window.setTimeout(checkNetworkAndReload, delay);
+        }
+
+        checkNetworkAndReload();
+    </script>
+</body>
+</html>
