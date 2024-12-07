@@ -1,6 +1,5 @@
-// AddTransactionForm.js
-import React from "react";
-import { Pencil } from "lucide-react"; // Importing an icon from lucide-react
+import React, { useEffect } from "react";
+import { Pencil } from "lucide-react";
 import PayerSelect from "./PayerSelect";
 
 const AddTransactionForm = ({
@@ -9,9 +8,37 @@ const AddTransactionForm = ({
   setNewTransaction,
   handleAddTransaction,
   error,
+  selectedTransaction, // The transaction selected for editing
+  setSelectedTransaction, // Function to clear the selected transaction
 }) => {
+  // Pre-fill form with selected transaction details
+  useEffect(() => {
+    if (selectedTransaction) {
+      setNewTransaction({
+        amount: selectedTransaction.amount,
+        payer: selectedTransaction.payer_id,
+        members: selectedTransaction.members,
+        remark: selectedTransaction.remark || "",
+      });
+    }
+  }, [selectedTransaction, setNewTransaction]);
+
+  // Handle form reset for editing
+  const handleFormReset = () => {
+    setNewTransaction({
+      amount: "",
+      payer: "",
+      members: [],
+      remark: "",
+    });
+    setSelectedTransaction(null); // Clear selected transaction
+  };
+
   return (
-    <form onSubmit={handleAddTransaction} className="mt-6 bg-gray-50 p-4 rounded-lg shadow-md">
+    <form
+      onSubmit={handleAddTransaction}
+      className="mt-6 bg-gray-50 p-4 rounded-lg shadow-md"
+    >
       <div className="space-y-4">
         {/* Payer Select */}
         <PayerSelect
@@ -39,7 +66,9 @@ const AddTransactionForm = ({
 
         {/* Members Selection */}
         <div>
-          <label className="block text-gray-700 font-medium mb-2">Split Among</label>
+          <label className="block text-gray-700 font-medium mb-2">
+            Split Among
+          </label>
           <div className="flex flex-wrap gap-2">
             {users.map((user) => {
               const isSelected = newTransaction.members.includes(user.id);
@@ -57,7 +86,11 @@ const AddTransactionForm = ({
                   className={`
                     flex items-center p-2 rounded-lg cursor-pointer
                     transition-all duration-200
-                    ${isSelected ? "bg-black text-white" : "bg-gray-100 text-gray-800 hover:bg-gray-200"}
+                    ${
+                      isSelected
+                        ? "bg-black text-white"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    }
                   `}
                 >
                   {user.name}
@@ -89,8 +122,19 @@ const AddTransactionForm = ({
           type="submit"
           className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition"
         >
-          Add Transaction
+          {selectedTransaction ? "Update Transaction" : "Add Transaction"}
         </button>
+
+        {/* Reset Button (Visible during editing) */}
+        {selectedTransaction && (
+          <button
+            type="button"
+            onClick={handleFormReset}
+            className="w-full mt-3 bg-gray-100 text-gray-800 p-3 rounded-lg hover:bg-gray-200 transition"
+          >
+            Cancel Edit
+          </button>
+        )}
       </div>
 
       {/* Error Message */}

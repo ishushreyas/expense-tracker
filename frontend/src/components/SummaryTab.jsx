@@ -1,85 +1,247 @@
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Wallet, TrendingUp, User } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  CircleDollarSign, 
+  TrendingUp, 
+  Users, 
+  ReceiptText, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Info
+} from 'lucide-react';
 
 function SummaryTab({ summary, users }) {
-  const userBalanceData = Object.entries(summary.user_balances || {}).map(([userId, balance]) => {
-    const user = users.find((u) => u.id === userId);
-    return {
-      id: userId,
-      name: user?.name || "Unknown",
-      balance: balance,
-      email: user?.email || "N/A"
-    };
-  });
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Prepare user balance data
+  const userBalanceData = useMemo(() => 
+    Object.entries(summary.user_balances || {}).map(([userId, balance]) => {
+      const user = users.find((u) => u.id === userId);
+      return {
+        id: userId,
+        name: user?.name || "Unknown",
+        balance: balance,
+        email: user?.email || "N/A",
+        expenses: summary.user_expenses?.[userId] || 0
+      };
+    }), [summary.user_balances, users]
+  );
+
+  // Calculations
+  const totalExpenses = summary.total_expenses || 0;
+  const highestExpenseUser = userBalanceData.reduce((max, user) => 
+    (user.expenses > max.expenses) ? user : max, 
+    { expenses: 0, name: 'None' }
+  );
+
+  // Calculate the total balance across all users
+  const totalBalance = userBalanceData.reduce((sum, user) => sum + user.balance, 0);
 
   return (
-    <div className="p-6 bg-white">
-      <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-800">
-        <Wallet className="mr-3 text-black" /> Expense Summary
-      </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gray-100 p-5 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <TrendingUp className="mr-2 text-green-600" /> Total Expenses
-          </h3>
-          <p className="text-3xl font-bold text-black">
-            ₹{summary.total_expenses?.toFixed(2) || "0.00"}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10 text-center"
+        >
+          <h1 className="text-4xl font-extrabold text-gray-800 flex items-center justify-center">
+            <CircleDollarSign className="mr-4 text-indigo-600" size={48} />
+            Dashboard
+          </h1>
+          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            Comprehensive overview of your team's financial activities
           </p>
-        </div>
-        
-        <div className="bg-gray-100 p-5 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <User className="mr-2 text-blue-600" /> User Balances
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={userBalanceData}>
-              <XAxis dataKey="name" tick={{fill: 'black'}} />
-              <YAxis tick={{fill: 'black'}} />
-              <Tooltip 
-                contentStyle={{backgroundColor: 'white', color: 'black', border: '1px solid black'}}
-                formatter={(value, name, props) => {
-                  const userDetail = userBalanceData.find(u => u.id === props.payload.id);
-                  return [
-                    `₹${value}`, 
-                    `${userDetail.name} (${userDetail.email})`
-                  ];
-                }}
-                cursor={{fill: 'rgba(0,0,0,0.1)'}}
-              />
-              <Bar dataKey="balance" barSize={40} radius={[4, 4, 0, 0]}>
-                {userBalanceData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.balance >= 0 ? '#10B981' : '#EF4444'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        </motion.div>
 
-      <div className="mt-6 bg-gray-100 p-5 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 text-black">User Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {userBalanceData.map((user) => (
-            <div 
-              key={user.id} 
-              className={`p-4 rounded-lg ${user.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}`}
-            >
-              <div className="flex items-center mb-2">
-                <User className="mr-2 text-black" />
-                <span className="font-semibold text-black">{user.name}</span>
-              </div>
-              <div className="text-sm text-gray-600">{user.email}</div>
-              <div className={`mt-2 font-bold ${user.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                Balance: ₹{user.balance.toFixed(2)}
-              </div>
+        {/* Top Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {/* Total Expenses Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-indigo-500"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <TrendingUp className="text-indigo-600" size={32} />
+              <span className="text-gray-500 font-medium">Total Expenses</span>
             </div>
-          ))}
+            <div className="text-3xl font-bold text-gray-800">
+              ₹{totalExpenses.toFixed(2)}
+            </div>
+          </motion.div>
+
+          {/* Highest Expense User Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-green-500"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <Users className="text-green-600" size={32} />
+              <span className="text-gray-500 font-medium">Highest Spender</span>
+            </div>
+            <div className="text-xl font-bold text-gray-800">
+              {highestExpenseUser.name}
+            </div>
+            <div className="text-lg text-green-600">
+              ₹{highestExpenseUser.expenses.toFixed(2)}
+            </div>
+          </motion.div>
+
+          {/* New Creative Metric Card */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-purple-500"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <ReceiptText className="text-purple-600" size={32} />
+              <span className="text-gray-500 font-medium">Total Balance Across All Users</span>
+            </div>
+            <div className="text-3xl font-bold text-gray-800">
+              ₹{totalBalance.toFixed(2)}
+            </div>
+          </motion.div>
         </div>
+
+        {/* User Details Section */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="bg-white shadow-xl rounded-xl p-8"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <Users className="mr-3 text-indigo-600" size={32} />
+              User Balance Details
+            </h2>
+            {selectedUser && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center bg-gray-100 px-4 py-2 rounded-full"
+              >
+                <Info className="mr-2 text-blue-500" size={20} />
+                <span className="text-gray-700">
+                  {selectedUser.name} selected
+                </span>
+              </motion.div>
+            )}
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {userBalanceData.map((user) => (
+              <motion.div 
+                key={user.id}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setSelectedUser(user)}
+                className={`
+                  p-5 rounded-xl cursor-pointer transition-all 
+                  ${selectedUser?.id === user.id 
+                    ? 'ring-4 ring-indigo-300 bg-indigo-50' 
+                    : 'bg-white hover:bg-gray-50'}
+                  shadow-md border border-gray-100
+                `}
+              >
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center">
+                    <div className={`
+                      w-12 h-12 rounded-full flex items-center justify-center mr-4
+                      ${user.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}
+                    `}>
+                      <Users 
+                        className={user.balance >= 0 ? 'text-green-600' : 'text-red-600'}
+                        size={24} 
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800">{user.name}</h3>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  {user.balance >= 0 
+                    ? <ArrowUpRight className="text-green-600" /> 
+                    : <ArrowDownRight className="text-red-600" />
+                  }
+                </div>
+                <div className="flex justify-between">
+                  <div className="text-sm text-gray-600">Balance</div>
+                  <div className={`
+                    text-xl font-bold
+                    ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}
+                  `}>
+                    ₹{user.balance.toFixed(2)}
+                  </div>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <div className="text-sm text-gray-600">Total Expenses</div>
+                  <div className="text-lg font-semibold text-gray-800">
+                    ₹{user.expenses.toFixed(2)}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Detailed User Modal */}
+        <AnimatePresence>
+          {selectedUser && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+              onClick={() => setSelectedUser(null)}
+            >
+              <motion.div 
+                initial={{ scale: 0.7 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.7 }}
+                className="bg-white rounded-2xl p-8 max-w-md w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-center">
+                  <div className={`
+                    mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-4
+                    ${selectedUser.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}
+                  `}>
+                    <Users 
+                      className={selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}
+                      size={48} 
+                    />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800">{selectedUser.name}</h2>
+                  <p className="text-gray-600 mb-4">{selectedUser.email}</p>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-gray-500">Balance</p>
+                      <div className={`
+                        text-2xl font-bold
+                        ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}
+                      `}>
+                        ₹{selectedUser.balance.toFixed(2)}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Total Expenses</p>
+                      <div className="text-2xl font-bold text-gray-800">
+                        ₹{selectedUser.expenses.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedUser(null)}
+                    className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

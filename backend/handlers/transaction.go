@@ -3,6 +3,7 @@ package handlers
 import (
     "context"
     "encoding/json"
+    "fmt"
     "net/http"
     "strconv"
     "time"
@@ -26,10 +27,10 @@ type Transaction struct {
 
 func AddTransaction(w http.ResponseWriter, r *http.Request) {
     type TransactionInput struct {
-        PayerID   string    `json:"payer_id"`
-        Amount    float64   `json:"amount"`
-        Members   []string  `json:"members"`
-	Remark    string    `json:"remark"`
+        PayerID string   `json:"payer_id"`
+        Amount  float64  `json:"amount"`
+        Members []string `json:"members"`
+        Remark  string   `json:"remark"`
     }
 
     var input TransactionInput
@@ -38,29 +39,22 @@ func AddTransaction(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Input validation
-    if input.PayerID == "" {
-        http.Error(w, "Payer ID is required", http.StatusBadRequest)
-        return
-    }
-    if input.Amount <= 0 {
-        http.Error(w, "Amount must be positive", http.StatusBadRequest)
-        return
-    }
-    if len(input.Members) == 0 {
-        http.Error(w, "At least one member is required", http.StatusBadRequest)
-        return
+    // Convert members strings to uuid.UUID
+    var membersUUID []uuid.UUID
+    for _, member := range input.Members {
+        memberUUID, err := uuid.Parse(member)
+        if err != nil {
+            http.Error(w, "Invalid member UUID", http.StatusBadRequest)
+            return
+        }
+        membersUUID = append(membersUUID, memberUUID)
     }
 
-    // Create context with timeout
-    ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-    defer cancel()
-
+    // Create transaction and insert into DB
     transactionID := uuid.New().String()
     query := "INSERT INTO transactions (id, payer_id, amount, members, created_at, remark) VALUES ($1, $2, $3, $4, now(), $5)"
-    
-    // Use Pool instead of DBConn, and pass context
-    _, err := db.Pool.Exec(ctx, query, transactionID, input.PayerID, input.Amount, input.Members, input.Remark)
+
+    _, err := db.Pool.Exec(r.Context(), query, transactionID, input.PayerID, input.Amount, membersUUID, input.Remark)
     if err != nil {
         http.Error(w, "Failed to add transaction: "+err.Error(), http.StatusInternalServerError)
         return
@@ -171,50 +165,48 @@ func GetTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTransactionByID(w http.ResponseWriter, r *http.Request) {
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
+    // Create context with timeout
+    ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+    defer cancel()
 
-	// Get transaction ID from URL parameters
-	vars := mux.Vars(r)
-	transactionID := vars["id"]
+    // Get transaction ID from URL parameters
+    vars := mux.Vars(r)
+    transactionIDStr := vars["id"]
+    transactionID, err := uuid.Parse(transactionIDStr)
+    if err != nil {
+        http.Error(w, "Invalid transaction ID format", http.StatusBadRequest)
+        return
+    }
 
-	// Validate transaction ID
-	if transactionID == "" {
-		http.Error(w, "Transaction ID is required", http.StatusBadRequest)
-		return
-	}
-
-	// Prepare query
-	query := `
+    // Prepare query
+    query := `
     SELECT id, payer_id, amount, members, created_at, remark, is_deleted, deleted_at
     FROM transactions
     WHERE id = $1
-`
+    `
 
-	// Execute query
-	var transaction Transaction
-	err := db.Pool.QueryRow(ctx, query, transactionID).Scan(
-		&transaction.ID, 
-		&transaction.PayerID, 
-		&transaction.Amount, 
-		&transaction.Members, 
-		&transaction.CreatedAt,
-		&transaction.Remark,
-	)
+    // Execute query
+    var transaction Transaction
+    err = db.Pool.QueryRow(ctx, query, transactionID).Scan(
+        &transaction.ID,
+        &transaction.PayerID,
+        &transaction.Amount,
+        &transaction.Members,
+        &transaction.CreatedAt,
+        &transaction.Remark,
+    )
 
-	if err == pgx.ErrNoRows {
-		http.Error(w, "Transaction not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, "Failed to retrieve transaction: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    if err == pgx.ErrNoRows {
+        http.Error(w, "Transaction not found", http.StatusNotFound)
+        return
+    } else if err != nil {
+        http.Error(w, "Failed to retrieve transaction: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(transaction)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(transaction)
 }
-
 func DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -342,6 +334,7 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	balances := make(map[uuid.UUID]float64)
+	user_expense := make(map[uuid.UUID]float64)
 	totalExpense := 0.00
 
 	for _, expense := range expenses {
@@ -351,6 +344,7 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		user_expense[expense.PayerID] += expense.Amount
 		// Calculate each member's share
 		share := expense.Amount / memberCount
 		totalExpense += expense.Amount
@@ -365,8 +359,58 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 	// Prepare response with pagination info
 	response := map[string]interface{}{
 		"total_expenses": totalExpense,
+		"user_expenses":  user_expense,
 		"user_balances":      balances,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func EditTransaction(w http.ResponseWriter, r *http.Request) {
+    type TransactionInput struct {
+	ID      uuid.UUID `json:"id"`
+        PayerID string    `json:"payer_id"`
+        Amount  float64   `json:"amount"`
+        Members []string  `json:"members"`
+        Remark  string    `json:"remark"`
+    }
+
+    // Get transaction ID from URL
+    vars := mux.Vars(r)
+    transactionIDStr := vars["id"]
+    transactionID, err := uuid.Parse(transactionIDStr)
+    if err != nil {
+        http.Error(w, "Invalid transaction ID format", http.StatusBadRequest)
+        return
+    }
+
+    // Parse the request body to get updated transaction data
+    var updatedTransaction TransactionInput
+    err = json.NewDecoder(r.Body).Decode(&updatedTransaction)
+    if err != nil {
+        http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+        return
+    }
+
+    // Make sure the transaction ID in the URL matches the one in the payload
+    if updatedTransaction.ID != transactionID {
+        http.Error(w, "Transaction ID mismatch", http.StatusBadRequest)
+        return
+    }
+
+    // Update the transaction in the database
+    query := `
+        UPDATE transactions
+        SET payer_id = $1, amount = $2, members = $3, remark = $4
+        WHERE id = $5`
+    _, err = db.Pool.Exec(r.Context(), query, updatedTransaction.PayerID, updatedTransaction.Amount, updatedTransaction.Members, updatedTransaction.Remark, transactionID)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Failed to update transaction: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with the updated transaction
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(updatedTransaction)
 }

@@ -1,6 +1,6 @@
 # Dockerfile
 # Stage 1: Build Frontend
-FROM node:18-alpine as frontend-builder
+FROM node:23-alpine as frontend-builder
 WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM golang:1.23.2-alpine as backend-builder
+FROM golang:1.23.4-alpine as backend-builder
 WORKDIR /backend
 COPY backend/go.* ./
 RUN go mod download

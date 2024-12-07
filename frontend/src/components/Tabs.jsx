@@ -3,7 +3,7 @@ import {
   DollarSign,
   Users,
   PlusCircle,
-  CheckCircle2,
+  LayoutDashboard	,
   User
 } from "lucide-react";
 
@@ -11,7 +11,7 @@ const Tabs = ({ activeTab, setActiveTab }) => {
   const tabItems = [
     { 
       id: "summary", 
-      icon: <CheckCircle2 className="w-5 h-5" />, 
+      icon: <LayoutDashboard className="w-5 h-5" />, 
       label: "Summary" 
     },
     { 
