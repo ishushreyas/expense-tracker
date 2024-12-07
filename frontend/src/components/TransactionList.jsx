@@ -6,7 +6,7 @@ const TransactionList = ({
   users,
   newTransaction,
   setNewTransaction,
-  handleNewTransaction,
+  handleAddTransaction,
   transactions, 
   setSelectedTransaction, 
   setConfirmDelete, 
