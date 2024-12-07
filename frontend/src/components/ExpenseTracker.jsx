@@ -33,7 +33,7 @@ function ExpenseTracker() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "http://192.168.31.229:8080/api";
+  const API_BASE_URL = "/api";
 
   // Utility function for API requests
   const apiRequest = async (url, options = {}) => {
