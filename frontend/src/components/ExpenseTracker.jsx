@@ -33,7 +33,7 @@ function ExpenseTracker() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "/api";
+  const API_BASE_URL = "http://192.168.31.229:8080/api";
 
   // Utility function for API requests
   const apiRequest = async (url, options = {}) => {
@@ -231,11 +231,15 @@ function ExpenseTracker() {
         onClose={() => setConfirmDelete({ id: null, show: false })}
         onConfirm={() => handleDeleteTransaction(confirmDelete.id)}
       />
-      <div className="w-full rounded max-w-4xl mx-auto">
+      <div className="w-full rounded max-w-4xl mx-auto sm:mb-14">
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
         {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
         {activeTab === "transactions" && (
           <TransactionList
+	    users={users} 
+	    newTransaction={newTransaction} 
+		setNewTransaction={setNewTransaction}  
+		handleAddTransaction={handleAddTransaction}
             transactions={transactions}
             setSelectedTransaction={setSelectedTransaction}
             setConfirmDelete={setConfirmDelete}
@@ -249,14 +253,6 @@ function ExpenseTracker() {
             onClose={handleTransactionClose}
             onEditTransaction={handleEditTransaction}
             users={users}
-          />
-        )}
-        {activeTab === "add-transaction" && (
-          <AddTransactionForm
-            users={users}
-            newTransaction={newTransaction}
-            setNewTransaction={setNewTransaction}
-            handleAddTransaction={handleAddTransaction}
           />
         )}
         {activeTab === "users" && (

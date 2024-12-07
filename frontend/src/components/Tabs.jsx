@@ -2,8 +2,7 @@ import React from 'react';
 import {
   DollarSign,
   Users,
-  PlusCircle,
-  LayoutDashboard	,
+  LayoutDashboard,
   User
 } from "lucide-react";
 
@@ -18,11 +17,6 @@ const Tabs = ({ activeTab, setActiveTab }) => {
       id: "transactions", 
       icon: <DollarSign className="w-5 h-5" />, 
       label: "Transactions" 
-    },
-    { 
-      id: "add-transaction", 
-      icon: <PlusCircle className="w-5 h-5" />, 
-      label: "Add" 
     },
     { 
       id: "users", 
@@ -56,7 +50,7 @@ const Tabs = ({ activeTab, setActiveTab }) => {
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 shadow-lg z-50">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-3">
           {tabItems.map((tab) => (
             <button
               key={tab.id}

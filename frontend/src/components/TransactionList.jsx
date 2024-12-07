@@ -1,14 +1,22 @@
-import React from "react";
-import { Trash2, NotebookTabs, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Trash2, FileEdit, AlertTriangle, Plus, X } from "lucide-react";
+import AddTransactionForm from "./AddTransactionForm";
 
 const TransactionList = ({ 
+  users,
+  newTransaction,
+  setNewTransaction,
+  handleNewTransaction,
   transactions, 
   setSelectedTransaction, 
   setConfirmDelete, 
   loading,
-  error 
+  error,
+  onAddTransaction 
 }) => {
-  // Format amount with commas for better readability
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  // Previous helper methods remain the same
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -18,38 +26,43 @@ const TransactionList = ({
     }).format(amount);
   };
 
-  // Truncate long names
   const truncateName = (name, maxLength = 15) => {
     return name && name.length > maxLength 
       ? `${name.slice(0, maxLength)}...`
       : name || "Unknown";
   };
 
-  // Render error state
+  const handleAddTransaction = () => {
+    if (newTransaction.amount && newTransaction.payer_name) {
+      onAddTransaction({
+        ...newTransaction,
+        amount: parseFloat(newTransaction.amount),
+        id: Date.now() // temporary id generation
+      });
+      setIsAddDialogOpen(false);
+      // Reset form
+      setNewTransaction({ amount: '', payer_name: '' });
+    }
+  };
+
+  // Error state rendering
   if (error) {
     return (
       <div className="flex items-center justify-center p-6 bg-red-50 rounded-lg">
-        <AlertCircle className="text-red-500 mr-2" size={24} />
+        <AlertTriangle className="text-red-500 mr-2" size={24} />
         <span className="text-red-600 font-medium">{error}</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 border border-gray-100">
-      <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">
-        Transaction History
-      </h3>
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-500"></div>
-        </div>
-      ) : transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+    <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      {/* Existing transaction list rendering */}
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+        <h3 className="text-xl font-bold text-gray-800 flex items-center">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
-            className="h-12 w-12 mb-2 opacity-50" 
+            className="h-6 w-6 mr-2 text-blue-500" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"
@@ -58,37 +71,62 @@ const TransactionList = ({
               strokeLinecap="round" 
               strokeLinejoin="round" 
               strokeWidth={2} 
-              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" 
+              d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0z" 
             />
           </svg>
-          <p className="text-gray-500 text-center">No transactions recorded</p>
+          Transaction History
+        </h3>
+      </div>
+      
+      {/* Rest of the existing rendering logic */}
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : transactions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-40 text-gray-400 p-4">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-16 w-16 mb-4 opacity-50 text-gray-300" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={1.5} 
+              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" 
+            />
+          </svg>
+          <p className="text-gray-500 text-center font-medium">No transactions recorded</p>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">
           {transactions.map((txn) => (
             <li
               key={txn.id}
-              className="py-3 px-2 hover:bg-gray-50 transition-colors duration-200 rounded-lg group"
+              className="px-4 py-3 hover:bg-gray-50 transition-colors duration-200 group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="font-bold text-gray-800 text-base">
+                  <span className={`font-bold text-black`}>
                     {formatAmount(txn.amount)}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 mt-1">
                     Payer: {truncateName(txn.payer_name)}
                   </span>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
                   <button
-                    className="text-gray-400 hover:text-blue-500 transition-colors p-1 rounded-full hover:bg-blue-50"
+                    className="text-gray-400 hover:text-blue-600 transition-all p-2 rounded-full hover:bg-blue-50"
                     onClick={() => setSelectedTransaction(txn)}
                     aria-label="Edit Transaction"
                   >
-                    <NotebookTabs size={20} />
+                    <FileEdit size={20} />
                   </button>
                   <button
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+                    className="text-gray-400 hover:text-red-600 transition-all p-2 rounded-full hover:bg-red-50"
                     onClick={() => setConfirmDelete({ id: txn.id, show: true })}
                     aria-label="Delete Transaction"
                   >
@@ -100,14 +138,39 @@ const TransactionList = ({
           ))}
         </ul>
       )}
+
+      {/* Floating Action Button */}
+      <button 
+        className="fixed bottom-6 right-6 bg-black text-white rounded-xl p-3 shadow-lg hover:bg-black-600 transition-all duration-300 z-50"
+        onClick={() => setIsAddDialogOpen(true)}
+        aria-label="Add Transaction"
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* Add Transaction Dialog */}
+      {isAddDialogOpen && (
+	      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto">
+	      <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-800">Add Transaction</h2>
+              <button
+                onClick={() => setIsAddDialogOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+	<AddTransactionForm
+	      users={users} 
+	      newTransaction={newTransaction} 
+	      setNewTransaction={setNewTransaction}
+	      handleAddTransaction={handleAddTransaction}      />
+	      </div>
+	      </div>
+      )}
     </div>
   );
-};
-
-TransactionList.defaultProps = {
-  transactions: [],
-  loading: false,
-  error: null
 };
 
 export default TransactionList;
