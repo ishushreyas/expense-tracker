@@ -32,19 +32,6 @@ const TransactionList = ({
       : name || "Unknown";
   };
 
-  const handleAddTransaction = () => {
-    if (newTransaction.amount && newTransaction.payer_name) {
-      onAddTransaction({
-        ...newTransaction,
-        amount: parseFloat(newTransaction.amount),
-        id: Date.now() // temporary id generation
-      });
-      setIsAddDialogOpen(false);
-      // Reset form
-      setNewTransaction({ amount: '', payer_name: '' });
-    }
-  };
-
   // Error state rendering
   if (error) {
     return (
