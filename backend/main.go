@@ -56,7 +56,7 @@ func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
 
 	otp := generateOTP() // Generate a random OTP
 	users[reqt.Email] = otp
-	url := "https://sandbox.api.mailtrap.io/api/send/3159350"
+	url := "https://send.api.mailtrap.io/api/send"
 	method := "POST"
 
 	emailContent := fmt.Sprintf(`{
@@ -64,7 +64,7 @@ func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
 		"to": [{"email": "%s"}],
 		"subject": "Your OTP Code",
 		"text": "Your OTP code is: %s",
-		"category": "OTP Verification"
+		"category": "Integration Test"
 	}`, reqt.Email, otp)
 
 	payload := strings.NewReader(emailContent)
