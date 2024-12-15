@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Save, Edit3, AlertTriangle, Check } from "lucide-react";
+import { X, Save, Edit3, AlertTriangle, BadgeCheck } from "lucide-react";
 
 const TransactionDetails = ({
   transaction,
@@ -183,7 +183,6 @@ const TransactionDetails = ({
               <>
                 <div className="flex flex-wrap gap-2">
             {users.map((user) => {
-              const isSelected = newTransaction.members.includes(user.id);
               return (
                 <div
                   key={user.id}
@@ -201,7 +200,7 @@ const TransactionDetails = ({
                   {user.username}
                   ${
                       isSelected
-                        ? <Check className="text-green-500" size={20} />
+                        ? <BadgeCheck className="text-green-500" size={20} />
                         : ""
                     }
                 </div>
