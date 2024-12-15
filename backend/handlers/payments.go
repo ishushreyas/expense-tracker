@@ -46,7 +46,7 @@ func AddPayment(w http.ResponseWriter, r *http.Request) {
     transactionID := uuid.New().String()
     query := "INSERT INTO transactions (id, payer_id, amount, reciever_id, created_at, remark) VALUES ($1, $2, $3, $4, now(), $5)"
 
-    _, err := db.Pool.Exec(r.Context(), query, transactionID, input.PayerID, input.Amount, recieverUUID, input.Remark)
+    _, err = db.Pool.Exec(r.Context(), query, transactionID, input.PayerID, input.Amount, recieverUUID, input.Remark)
     if err != nil {
         http.Error(w, "Failed to add transaction: "+err.Error(), http.StatusInternalServerError)
         return
@@ -183,7 +183,7 @@ func GetPaymentByID(w http.ResponseWriter, r *http.Request) {
         &transaction.ID,
         &transaction.PayerID,
         &transaction.Amount,
-        &transaction.Members,
+        &transaction.RecieverID,
         &transaction.CreatedAt,
         &transaction.Remark,
     )
@@ -336,8 +336,8 @@ func GeneratePaymentSummary(w http.ResponseWriter, r *http.Request) {
 		totalExpense += expense.Amount
 
 		// Deduct shares from members and add the full amount to the payer
-		balances[expense.RecieverID] += expense.Amount
-		balances[expense.PayerID] -= expense.Amount
+		balances[expense.RecieverID] += share
+		balances[expense.PayerID] -= share
 	}
 
 	// Prepare response with pagination info
