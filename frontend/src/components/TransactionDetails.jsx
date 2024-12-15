@@ -126,7 +126,7 @@ const TransactionDetails = ({
                   <option value="">Select Payer</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name}
+                      {user.username}
                     </option>
                   ))}
                 </select>
@@ -193,7 +193,7 @@ const TransactionDetails = ({
                         checked={editedTransaction.members.includes(user.id)}
                         onChange={() => handleMemberChange(user.id)}
                       />
-                      <span className="text-sm">{user.name}</span>
+                      <span className="text-sm">{user.username}</span>
                     </label>
                   ))}
                 </div>
