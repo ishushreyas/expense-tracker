@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Save, Edit3, AlertTriangle } from "lucide-react";
+import { X, Save, Edit3, AlertTriangle, Check } from "lucide-react";
 
 const TransactionDetails = ({
   transaction,
@@ -187,14 +187,7 @@ const TransactionDetails = ({
               return (
                 <div
                   key={user.id}
-                  onClick={() =>
-                    setNewTransaction((prev) => ({
-                      ...prev,
-                      members: isSelected
-                        ? prev.members.filter((id) => id !== user.id)
-                        : [...prev.members, user.id],
-                    }))
-                  }
+                  onClick={() => handleMemberChange(user.id)}
                   className={`
                     flex items-center p-2 rounded-lg cursor-pointer
                     transition-all duration-200
