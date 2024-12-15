@@ -149,6 +149,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // Define a struct that matches the database columns
 type User struct {
     ID       string `json:"id" db:"id"`
-    Userame     string `json:"name" db:"username"`
+    Username     string `json:"name" db:"username"`
     Email      string	   `json:"email"`
 }
