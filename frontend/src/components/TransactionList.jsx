@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, FileEdit, AlertTriangle, Plus, X } from "lucide-react";
+import { Trash2, FileEdit, AlertTriangle, Plus, X, Send, Download } from "lucide-react";
 import AddTransactionForm from "./AddTransactionForm";
 
 const TransactionList = ({ 
@@ -12,7 +12,8 @@ const TransactionList = ({
   setConfirmDelete, 
   loading,
   error,
-  onAddTransaction 
+  onAddTransaction,
+  selectedTab // New prop to determine tab
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -44,8 +45,7 @@ const TransactionList = ({
 
   return (
     <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      {/* Existing transaction list rendering */}
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
         <h3 className="text-xl font-bold text-gray-800 flex items-center">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -63,16 +63,39 @@ const TransactionList = ({
           </svg>
           Transaction History
         </h3>
-	      <button 
-        className="bg-black text-white rounded-xl p-3 shadow-lg hover:bg-black-600 transition-all duration-300"
-        onClick={() => setIsAddDialogOpen(true)}
-        aria-label="Add Transaction"
-      >
-        <Plus size={24} />
-      </button>
+        
+        {selectedTab === 'transactions' ? (
+          <button 
+            className="bg-black text-white rounded-xl p-3 shadow-lg hover:bg-gray-800 transition-all duration-300 flex items-center space-x-2"
+            onClick={() => setIsAddDialogOpen(true)}
+            aria-label="Add Transaction"
+          >
+            <Plus size={24} />
+            <span className="hidden md:inline">Add Transaction</span>
+          </button>
+        ) : (
+          <div className="flex space-x-3">
+            <button 
+              className="bg-green-500 text-white rounded-xl p-3 shadow-lg hover:bg-green-600 transition-all duration-300 flex items-center space-x-2"
+              onClick={null} // Replace with actual receive payment handler
+              aria-label="Receive Payment"
+            >
+              <Download size={24} />
+              <span className="hidden md:inline">Receive</span>
+            </button>
+            <button 
+              className="bg-blue-500 text-white rounded-xl p-3 shadow-lg hover:bg-blue-600 transition-all duration-300 flex items-center space-x-2"
+              onClick={null} // Replace with actual send payment handler
+              aria-label="Send Payment"
+            >
+              <Send size={24} />
+              <span className="hidden md:inline">Send</span>
+            </button>
+          </div>
+        )}
       </div>
       
-      {/* Rest of the existing rendering logic */}
+      {/* Rest of the existing rendering logic remains the same */}
       {loading ? (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -135,9 +158,9 @@ const TransactionList = ({
 
       {/* Add Transaction Dialog */}
       {isAddDialogOpen && (
-	      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto">
-	      <div className="flex justify-between items-center p-4 border-b border-gray-200">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800">Add Transaction</h2>
               <button
                 onClick={() => setIsAddDialogOpen(false)}
@@ -146,13 +169,14 @@ const TransactionList = ({
                 <X size={24} />
               </button>
             </div>
-	<AddTransactionForm
-	      users={users} 
-	      newTransaction={newTransaction} 
-	      setNewTransaction={setNewTransaction}
-	      handleAddTransaction={handleAddTransaction}      />
-	      </div>
-	      </div>
+            <AddTransactionForm
+              users={users} 
+              newTransaction={newTransaction} 
+              setNewTransaction={setNewTransaction}
+              handleAddTransaction={handleAddTransaction}      
+            />
+          </div>
+        </div>
       )}
     </div>
   );
