@@ -63,6 +63,13 @@ const TransactionList = ({
           </svg>
           Transaction History
         </h3>
+	      <button 
+        className="bg-black text-white rounded-xl p-3 shadow-lg hover:bg-black-600 transition-all duration-300"
+        onClick={() => setIsAddDialogOpen(true)}
+        aria-label="Add Transaction"
+      >
+        <Plus size={24} />
+      </button>
       </div>
       
       {/* Rest of the existing rendering logic */}
@@ -125,15 +132,6 @@ const TransactionList = ({
           ))}
         </ul>
       )}
-
-      {/* Floating Action Button */}
-      <button 
-        className="fixed bottom-6 right-6 bg-black text-white rounded-xl p-3 shadow-lg hover:bg-black-600 transition-all duration-300 z-50"
-        onClick={() => setIsAddDialogOpen(true)}
-        aria-label="Add Transaction"
-      >
-        <Plus size={24} />
-      </button>
 
       {/* Add Transaction Dialog */}
       {isAddDialogOpen && (
