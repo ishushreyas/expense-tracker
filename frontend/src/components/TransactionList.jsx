@@ -182,7 +182,7 @@ const TransactionList = ({
 
         {selectedTab === 'transactions' ? (
               <Payments users={users} currentUser={users[1]} />
-      ) : ()}
+      ) : ("")}
     </div>
   );
 };
