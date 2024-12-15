@@ -81,7 +81,7 @@ func (s *WebSocketServer) HandleWebSocket(w http.ResponseWriter, r *http.Request
 	s.register <- conn
 
 	for {
-		var transaction Transaction
+		var transaction *db.Transaction
 		err := conn.ReadJSON(&transaction)
 		if err != nil {
 			s.unregister <- conn
