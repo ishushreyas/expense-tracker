@@ -34,7 +34,7 @@ const PayerSelect = ({
         >
           <div className="flex items-center">
             <UserCircle2 className="mr-2 text-gray-500" size={20} />
-            {selectedUser ? selectedUser.name : 'Select Payer'}
+            {selectedUser ? selectedUser.username : 'Select Payer'}
           </div>
           <svg 
             className="h-5 w-5 text-gray-400" 
