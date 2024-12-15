@@ -134,6 +134,38 @@ func isValidEmail(email string) bool {
 	return re.MatchString(email)
 }
 
+func verifyToken(r *http.Request) (*jwt.Token, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, fmt.Errorf("no token found")
+	}
+
+	// Extract token from the Authorization header
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Validate the algorithm
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid signing method")
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("invalid or expired token")
+	}
+
+	return token, nil
+}
+
+func checkLoginStatusHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := verifyToken(r)
+	if err != nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+	w.Write([]byte("User is logged in"))
+}
+
 func main() {
 	// Initialize database
 	dbPool, err := db.InitDatabase()
@@ -174,6 +206,8 @@ func main() {
 
 	r.HandleFunc("/send-otp", sendOTPHandler).Methods("POST")
 	r.HandleFunc("/verify-otp", verifyOTPHandler).Methods("POST")
+
+	r.HandleFunc("/check-login", checkLoginStatusHandler).Methods("GET")
 
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
