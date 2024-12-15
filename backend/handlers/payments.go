@@ -296,7 +296,7 @@ func SoftDeletePayment(w http.ResponseWriter, r *http.Request) {
 }
 
 // calculateBalances calculates the net balance for each member.
-func GenerateSummary(w http.ResponseWriter, r *http.Request) {
+func GeneratePaymentSummary(w http.ResponseWriter, r *http.Request) {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -350,7 +350,7 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func EditTransaction(w http.ResponseWriter, r *http.Request) {
+func EditPayment(w http.ResponseWriter, r *http.Request) {
     type TransactionInput struct {
 	ID      uuid.UUID `json:"id"`
         PayerID string    `json:"payer_id"`
