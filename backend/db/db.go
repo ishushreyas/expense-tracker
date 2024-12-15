@@ -13,7 +13,7 @@ import (
 
 var Pool *pgxpool.Pool
 
-func InitDatabase() *pgxpool.Pool, error {
+func InitDatabase() (*pgxpool.Pool, error) {
 	// Read database connection URL from environment or use default
 	if os.Getenv("RENDER_SERVICE_ID") == "" { // (Render sets RENDER_SERVICE_ID in production)
 		err := godotenv.Load()
