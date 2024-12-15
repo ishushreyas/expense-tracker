@@ -330,22 +330,14 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 	totalExpense := 0.00
 
 	for _, expense := range expenses {
-		// Split the members into individual names
-		memberCount := float64(len(expense.Members))
-		if memberCount == 0 {
-			continue
-		}
-
 		user_expense[expense.PayerID] += expense.Amount
 		// Calculate each member's share
-		share := expense.Amount / memberCount
+		share := expense.Amount / 2
 		totalExpense += expense.Amount
 
 		// Deduct shares from members and add the full amount to the payer
-		for _, member := range expense.Members {
-			balances[member] -= share
-		}
-		balances[expense.PayerID] += expense.Amount
+		balances[expense.RecieverID] += expense.Amount
+		balances[expense.PayerID] -= expense.Amount
 	}
 
 	// Prepare response with pagination info
