@@ -29,6 +29,13 @@ function ExpenseTracker() {
     members: [],
   });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [newPayment, setNewPayment] = useState({
+    payerId: "",
+    amount: "",
+    recieverId: "",
+  });
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ id: null, show: false });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,6 +87,29 @@ function ExpenseTracker() {
       setTransactions(enrichedTransactions);
     } catch (err) {
       setError(`Failed to fetch transactions: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
+    setLoading(true);
+    try {
+      const paymentData = await apiRequest(`${API_BASE_URL}/payments`);
+      const userMap = users.reduce(
+        (acc, user) => ({ ...acc, [user.id]: user.username }),
+        {}
+      );
+      const enrichedTransactions = (paymentData?.payments || []).map(
+        (txn) => ({
+          ...txn,
+          payer_name: userMap[txn.payer_id] || "Unknown User",
+          reciever_name: userMap[txn.reciever_id] || "Unknown User"),
+        })
+      );
+      setTransactions(enrichedTransactions);
+    } catch (err) {
+      setError(`Failed to fetch payments: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -153,6 +183,39 @@ function ExpenseTracker() {
     }
   };
 
+const handleAddPayment = async (e) => {
+    e.preventDefault();
+    if (!newPayment.payerId || !newPayment.recieverId) {
+      setError("Please select a payer and at least one member.");
+      return;
+    }
+    const amount = parseFloat(newTransaction.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setError("Amount must be a positive number.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiRequest(`${API_BASE_URL}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payer_id: newPayment.payerId,
+          amount,
+          members: newPayment.recieverId,
+          remark: newPayment.remark,
+        }),
+      });
+      setPayment((prev) => [...prev, data]);
+      setNewPayment({ payerId: "", amount: "", recieverId: "" });
+    } catch (err) {
+      setError(`Failed to add payment: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteUser = async (userId) => {
     setLoading(true);
     try {
@@ -197,6 +260,39 @@ function ExpenseTracker() {
   }
 };
 
+const handleEditPayment = async (updatedPayment) => {
+  setLoading(true);
+  try {
+    // Send the updated transaction to the backend
+    const data = await apiRequest(`${API_BASE_URL}/payments/${updatedPayment.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+	id: updatedPayment.id,
+        payer_id: updatedPayment.payer_id,
+        amount: updatedPayment.amount,
+        members: updatedPayment.members,
+        remark: updatedPayment.remark,
+      }),
+    });
+
+    // Update the transactions state with the new details
+    setPayments((prev) =>
+      prev.map((txn) =>
+        txn.id === updatedPayment.id ? { ...txn, ...data } : txn
+      )
+    );
+
+    // Close the transaction details view after editing
+    setSelectedPayment(null);
+  } catch (err) {
+    setError(`Failed to update transaction: ${err.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const handleDeleteTransaction = async (transactionId) => {
     setLoading(true);
     try {
@@ -207,6 +303,21 @@ function ExpenseTracker() {
       setConfirmDelete({ id: null, show: false });
     } catch (err) {
       setError(`Failed to delete transaction: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const handleDeletePayment = async (paymentId) => {
+    setLoading(true);
+    try {
+      await apiRequest(`${API_BASE_URL}/payments/${paymentId}/soft-delete`, {
+        method: "DELETE",
+      });
+      setPayments((prev) => prev.filter((txn) => txn.id !== paymentId));
+      setConfirmDelete({ id: null, show: false });
+    } catch (err) {
+      setError(`Failed to delete payment: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -224,15 +335,15 @@ function ExpenseTracker() {
   }, [users]);
 
   return (
-    <div className="min-h-screen py-6 md:rounded-3xl overflow-hidden">
-	<Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="min-h-screen py-6">
       {error && <ErrorNotification error={error} setError={setError} />}
       <DeleteConfirmationModal
         show={confirmDelete.show}
         onClose={() => setConfirmDelete({ id: null, show: false })}
         onConfirm={() => handleDeleteTransaction(confirmDelete.id)}
       />
-      <div className="w-full max-w-4xl mx-auto sm:mb-14">
+      <div className="w-full max-w-4xl mx-auto md:rounded-3xl overflow-hidden sm:mb-14">
+	<Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
         {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
         {activeTab === "transactions" && (
           <TransactionList
@@ -255,11 +366,25 @@ function ExpenseTracker() {
             users={users}
           />
         )}
-        {activeTab === "users" && (
-          <UsersTab
+        {activeTab === "payments" && (
+          <TransactionList
+	    users={users} 
+	    newTransaction={newPayment} 
+		setNewTransaction={setNewPayment}  
+		handleAddTransaction={handleAddPayment}
+            transactions={payments}
+            setSelectedTransaction={setSelectedPayment}
+            setConfirmDelete={setConfirmDelete}
+            loading={loading}
+	    error={error}
+          />
+        )}
+        {selectedTransaction && (
+          <TransactionDetails
+            transaction={selectedPayment}
+            onClose={handleTransactionClose}
+            onEditTransaction={handleEditPayment}
             users={users}
-            onAddUser={handleAddUser}
-            onDeleteUser={handleDeleteUser}
           />
         )}
       </div>
