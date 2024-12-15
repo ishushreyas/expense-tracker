@@ -59,7 +59,7 @@ const PayerSelect = ({
                 className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
               >
                 <span>{user.username}</span>
-                {newTransaction.id === user.id && (
+                {newTransaction.payerId === user.id && (
                   <Check className="text-green-500" size={20} />
                 )}
               </li>
