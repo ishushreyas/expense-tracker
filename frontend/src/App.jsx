@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import ExpenseTracker from './components/ExpenseTracker';
 import Login from './components/Login';
 
-const [isLoggedIn, setIsLoggedIn] = useState(false);
-
 const checkLoginStatus = async () => {
   try {
     const response = await axios.get('/check-login', {
@@ -15,11 +13,12 @@ const checkLoginStatus = async () => {
   }
 };
 
+function App() {
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+
  useEffect(() => {
     checkLoginStatus();
   }, []);
-
-function App() {
 
   return (
     <>
