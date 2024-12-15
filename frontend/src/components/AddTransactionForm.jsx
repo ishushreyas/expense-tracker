@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Pencil, Check } from "lucide-react";
+import { Pencil, CircleCheck } from "lucide-react";
 import PayerSelect from "./PayerSelect";
 
 const AddTransactionForm = ({
@@ -94,9 +94,9 @@ const AddTransactionForm = ({
                   `}
                 >
                   {user.username}
-                  ${
+                  {
                       isSelected
-                        ? <Check className="text-green-500" size={20} />
+                        ? <CircleCheck className="text-white" size={20} />
                         : ""
                     }
                 </div>
