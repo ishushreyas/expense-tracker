@@ -2,7 +2,7 @@ import {
 	AlertCircle,
 	X
 } from "lucide-react";
-function ErrorNotification({ error, clearError }) {
+function ErrorNotification({ error, setError }) {
   if (!error) return null;
 
   return (
