@@ -11,10 +11,16 @@ import (
 
 func main() {
 	// Initialize database
-	if err := db.InitDatabase(); err != nil {
+	database, err := db.InitDatabase()
+	if err != nil {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
 	defer db.CloseDatabase()
+
+	// Initialize repositories and controllers
+	transactionRepo := db.NewTransactionRepository(database)
+	wsServer := handler.NewWebSocketServer(transactionRepo)
+	transactionController := handler.NewTransactionController(transactionRepo, wsServer)
 
 	r := mux.NewRouter()
 
