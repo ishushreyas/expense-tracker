@@ -21,6 +21,7 @@ import (
 var users = make(map[string]string) // Map for storing user email and OTP
 
 var jwtSecret []byte
+var emailStr string
 
 func init() {
 	if os.Getenv("RENDER_SERVICE_ID") == "" { // (Render sets RENDER_SERVICE_ID in production)
@@ -29,7 +30,7 @@ func init() {
 			log.Println("env not found in RENDER development")
 		}
 	}
-	emailStr := os.Getenv("EMAIL_SERVICE")
+	emailStr = os.Getenv("EMAIL_SERVICE")
 	if emailStr == "" {
 		log.Panic("error getting email key")	
 	}
@@ -41,6 +42,20 @@ func init() {
 }
 
 func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
+	type Request struct {
+		Email string `json:"email"`
+	}
+	var reqt Request
+	json.NewDecoder(r.Body).Decode(&reqt)
+
+	// Validate email format
+	if !isValidEmail(reqt.Email) {
+		http.Error(w, "Invalid email format", http.StatusBadRequest)
+		return
+	}
+
+	otp := generateOTP() // Generate a random OTP
+	users[reqt.Email] = otp
 	url := "https://sandbox.api.mailtrap.io/api/send/3159350"
 	method := "POST"
 
@@ -50,7 +65,7 @@ func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
 		"subject": "Your OTP Code",
 		"text": "Your OTP code is: %s",
 		"category": "OTP Verification"
-	}`, req.Email, otp)
+	}`, reqt.Email, otp)
 
 	payload := strings.NewReader(emailContent)
 	
@@ -62,7 +77,7 @@ func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
-	req.Header.Add("Authorization", "Bearer " + emailStr )
+	req.Header.Add("Authorization", "Bearer " +  emailStr)
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := client.Do(req)
@@ -121,16 +136,16 @@ func isValidEmail(email string) bool {
 
 func main() {
 	// Initialize database
-	database, err := db.InitDatabase()
+	dbPool, err := db.InitDatabase()
 	if err != nil {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
 	defer db.CloseDatabase()
 
 	// Initialize repositories and controllers
-	transactionRepo := NewTransactionRepository(dbPool)
-	wsServer := NewWebSocketServer(transactionRepo)
-	transactionController := NewTransactionController(transactionRepo, wsServer)
+	transactionRepo := db.NewTransactionRepository(dbPool)
+	wsServer := handlers.NewWebSocketServer(transactionRepo)
+	transactionController := handlers.NewTransactionController(transactionRepo, wsServer)
 
 	// Start WebSocket server
 	go wsServer.Run()

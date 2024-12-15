@@ -18,7 +18,7 @@ const (
 )
 
 type ExtendedTransaction struct {
-	Transaction
+	db.Transaction
 	Type       TransactionType `json:"type"`
 	SenderName string          `json:"sender_name"`
 	Status     string          `json:"status"`
@@ -81,7 +81,7 @@ func (s *WebSocketServer) HandleWebSocket(w http.ResponseWriter, r *http.Request
 	s.register <- conn
 
 	for {
-		var transaction *db.Transaction
+		var transaction db.Transaction
 		err := conn.ReadJSON(&transaction)
 		if err != nil {
 			s.unregister <- conn
