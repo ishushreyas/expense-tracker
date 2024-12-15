@@ -45,7 +45,7 @@ func InitDatabase() (*pgxpool.Pool, error) {
 	}
 
 	log.Println("Successfully connected to database")
-	return conn, nil
+	return Pool, nil
 }
 
 func CloseDatabase() {
