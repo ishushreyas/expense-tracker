@@ -224,15 +224,15 @@ function ExpenseTracker() {
   }, [users]);
 
   return (
-    <div className="min-h-screen py-6">
+    <div className="min-h-screen py-6 md:rounded-3xl overflow-hidden">
+	<Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
       {error && <ErrorNotification error={error} setError={setError} />}
       <DeleteConfirmationModal
         show={confirmDelete.show}
         onClose={() => setConfirmDelete({ id: null, show: false })}
         onConfirm={() => handleDeleteTransaction(confirmDelete.id)}
       />
-      <div className="w-full rounded max-w-4xl mx-auto sm:mb-14">
-        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="w-full max-w-4xl mx-auto sm:mb-14">
         {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
         {activeTab === "transactions" && (
           <TransactionList
