@@ -13,7 +13,7 @@ import (
 
 var Pool *pgxpool.Pool
 
-func InitDatabase() error {
+func InitDatabase() *pgxpool.Pool, error {
 	// Read database connection URL from environment or use default
 	if os.Getenv("RENDER_SERVICE_ID") == "" { // (Render sets RENDER_SERVICE_ID in production)
 		err := godotenv.Load()
@@ -30,22 +30,22 @@ func InitDatabase() error {
 	var err error
 	Pool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
-		return fmt.Errorf("unable to create connection pool: %v", err)
+		return nil, fmt.Errorf("unable to create connection pool: %v", err)
 	}
 
 	// Verify connection
 	conn, err := Pool.Acquire(context.Background())
 	if err != nil {
-		return fmt.Errorf("failed to acquire connection: %v", err)
+		return nil, fmt.Errorf("failed to acquire connection: %v", err)
 	}
 	defer conn.Release()
 
 	if err := conn.Conn().Ping(context.Background()); err != nil {
-		return fmt.Errorf("failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
 	log.Println("Successfully connected to database")
-	return nil
+	return conn, nil
 }
 
 func CloseDatabase() {
