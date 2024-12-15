@@ -3,7 +3,7 @@ import {
   DollarSign,
   Users,
   LayoutDashboard,
-  User
+  HeartHandshake
 } from "lucide-react";
 
 const Tabs = ({ activeTab, setActiveTab }) => {
@@ -19,9 +19,9 @@ const Tabs = ({ activeTab, setActiveTab }) => {
       label: "Transactions" 
     },
     { 
-      id: "users", 
-      icon: <User className="w-5 h-5" />, 
-      label: "Users" 
+      id: "payments", 
+      icon: <HeartHandshake className="w-5 h-5" />, 
+      label: "Payments" 
     }
   ];
 
