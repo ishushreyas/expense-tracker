@@ -35,7 +35,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
     defer cancel()
 
     userID := uuid.New().String()
-    query := "INSERT INTO users (id, name, is_active) VALUES ($1, $2, true)"
+    query := "INSERT INTO users (id, name, email) VALUES ($1, $2, true)"
     
     // Use connection from pool with context
     _, err := db.Pool.Exec(ctx, query, userID, input.Name)
@@ -54,7 +54,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
     ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
     defer cancel()
 
-    query := "SELECT id, username, is_active FROM users"
+    query := "SELECT id, username, email FROM users"
     
     // Use connection from pool with context
     rows, err := db.Pool.Query(ctx, query)
@@ -96,7 +96,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
     defer cancel()
 
     // Query to retrieve user by ID
-    query := "SELECT id, username, is_active FROM users WHERE id = $1"
+    query := "SELECT id, username, email FROM users WHERE id = $1"
 
     // Execute the query
     row := db.Pool.QueryRow(ctx, query, id)
