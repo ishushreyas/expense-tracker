@@ -52,12 +52,12 @@ const Login = ({ setIsLoggedIn }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black-100 to-black-300 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 p-4">
       <div className="bg-white shadow-2xl rounded-xl p-8 w-full max-w-md">
         {step === "email" ? (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-black-600 mb-4">Login</h2>
+              <h2 className="text-3xl font-bold text-gray-600 mb-4">Login</h2>
               <p className="text-gray-500">Enter your email to receive an OTP</p>
             </div>
             <div className="relative">
@@ -73,7 +73,7 @@ const Login = ({ setIsLoggedIn }) => {
             <button 
               onClick={handleSendOTP} 
               disabled={loading}
-              className="w-full bg-black-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -93,7 +93,7 @@ const Login = ({ setIsLoggedIn }) => {
         ) : (
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-black-600 mb-4">Verify OTP</h2>
+              <h2 className="text-3xl font-bold text-gray-600 mb-4">Verify OTP</h2>
               <p className="text-gray-500">Enter the OTP sent to {email}</p>
             </div>
             <div className="relative">
@@ -109,7 +109,7 @@ const Login = ({ setIsLoggedIn }) => {
             <button 
               onClick={handleVerifyOTP} 
               disabled={loading}
-              className="w-full bg-black-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
             >
               {loading ? (
                 <>
