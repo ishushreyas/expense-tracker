@@ -17,7 +17,6 @@ import (
 type Transaction struct {
     ID         uuid.UUID   `json:"id" db:"id"`
     PayerID    uuid.UUID   `json:"payer_id" db:"payer_id"`
-    Email      string	   `json:"email"`
     Amount     float64     `json:"amount" db:"amount"`
     Members    []uuid.UUID `json:"members" db:"members"`
     Remark     string      `json:"remark" db:"remark"`
