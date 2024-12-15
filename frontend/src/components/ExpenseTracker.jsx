@@ -104,7 +104,7 @@ function ExpenseTracker() {
         (txn) => ({
           ...txn,
           payer_name: userMap[txn.payer_id] || "Unknown User",
-          reciever_name: userMap[txn.reciever_id] || "Unknown User"),
+          reciever_name: userMap[txn.reciever_id] || "Unknown User",
         })
       );
       setTransactions(enrichedTransactions);
