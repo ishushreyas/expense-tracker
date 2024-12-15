@@ -54,7 +54,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
     ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
     defer cancel()
 
-    query := "SELECT id, name, is_active FROM users"
+    query := "SELECT id, username, is_active FROM users"
     
     // Use connection from pool with context
     rows, err := db.Pool.Query(ctx, query)
@@ -96,7 +96,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
     defer cancel()
 
     // Query to retrieve user by ID
-    query := "SELECT id, name, is_active FROM users WHERE id = $1"
+    query := "SELECT id, username, is_active FROM users WHERE id = $1"
 
     // Execute the query
     row := db.Pool.QueryRow(ctx, query, id)
@@ -149,6 +149,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // Define a struct that matches the database columns
 type User struct {
     ID       string `json:"id" db:"id"`
-    Username     string `json:"name" db:"username"`
+    Username     string `json:"username" db:"username"`
     Email      string	   `json:"email"`
 }
