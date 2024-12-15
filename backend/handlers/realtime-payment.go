@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/ishushreyas/expense-tracker/db"
 )
 
 type TransactionType string
@@ -28,10 +29,10 @@ type WebSocketServer struct {
 	broadcast   chan ExtendedTransaction
 	register    chan *websocket.Conn
 	unregister  chan *websocket.Conn
-	repository  *TransactionRepository
+	repository  *db.TransactionRepository
 }
 
-func NewWebSocketServer(repo *TransactionRepository) *WebSocketServer {
+func NewWebSocketServer(repo *db.TransactionRepository) *WebSocketServer {
 	return &WebSocketServer{
 		clients:     make(map[*websocket.Conn]bool),
 		broadcast:   make(chan ExtendedTransaction),
@@ -106,11 +107,11 @@ func (s *WebSocketServer) HandleWebSocket(w http.ResponseWriter, r *http.Request
 }
 
 type TransactionController struct {
-	repository *TransactionRepository
+	repository *db.TransactionRepository
 	wsServer   *WebSocketServer
 }
 
-func NewTransactionController(repo *TransactionRepository, ws *WebSocketServer) *TransactionController {
+func NewTransactionController(repo *db.TransactionRepository, ws *WebSocketServer) *TransactionController {
 	return &TransactionController{
 		repository: repo,
 		wsServer:   ws,
