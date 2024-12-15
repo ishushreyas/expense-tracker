@@ -67,7 +67,7 @@ function ExpenseTracker() {
     try {
       const transactionData = await apiRequest(`${API_BASE_URL}/transactions`);
       const userMap = users.reduce(
-        (acc, user) => ({ ...acc, [user.id]: user.name }),
+        (acc, user) => ({ ...acc, [user.id]: user.username }),
         {}
       );
       const enrichedTransactions = (transactionData?.transactions || []).map(
