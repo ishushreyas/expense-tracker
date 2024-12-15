@@ -182,21 +182,39 @@ const TransactionDetails = ({
             {isEditing ? (
               <>
                 <div className="flex flex-wrap gap-2">
-                  {users.map((user) => (
-                    <label
-                      key={user.id}
-                      className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200 transition"
-                    >
-                      <input
-                        type="checkbox"
-                        className="form-checkbox text-blue-600 rounded focus:ring-blue-500"
-                        checked={editedTransaction.members.includes(user.id)}
-                        onChange={() => handleMemberChange(user.id)}
-                      />
-                      <span className="text-sm">{user.username}</span>
-                    </label>
-                  ))}
+            {users.map((user) => {
+              const isSelected = newTransaction.members.includes(user.id);
+              return (
+                <div
+                  key={user.id}
+                  onClick={() =>
+                    setNewTransaction((prev) => ({
+                      ...prev,
+                      members: isSelected
+                        ? prev.members.filter((id) => id !== user.id)
+                        : [...prev.members, user.id],
+                    }))
+                  }
+                  className={`
+                    flex items-center p-2 rounded-lg cursor-pointer
+                    transition-all duration-200
+                    ${
+                      isSelected
+                        ? "bg-black text-white"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    }
+                  `}
+                >
+                  {user.username}
+                  ${
+                      isSelected
+                        ? <Check className="text-green-500" size={20} />
+                        : ""
+                    }
                 </div>
+              );
+            })}
+          </div>
                 {errors.members && (
                   <p className="text-red-500 text-xs mt-1 flex items-center">
                     <AlertTriangle className="mr-1" size={16} /> {errors.members}
