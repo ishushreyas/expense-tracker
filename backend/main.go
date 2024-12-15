@@ -18,9 +18,15 @@ func main() {
 	defer db.CloseDatabase()
 
 	// Initialize repositories and controllers
-	transactionRepo := db.NewTransactionRepository(database)
-	wsServer := handler.NewWebSocketServer(transactionRepo)
-	transactionController := handler.NewTransactionController(transactionRepo, wsServer)
+	transactionRepo := NewTransactionRepository(dbPool)
+	wsServer := NewWebSocketServer(transactionRepo)
+	transactionController := NewTransactionController(transactionRepo, wsServer)
+
+	// Start WebSocket server
+	go wsServer.Run()
+
+	// Define routes
+	transactionController.Routes()
 
 	r := mux.NewRouter()
 
