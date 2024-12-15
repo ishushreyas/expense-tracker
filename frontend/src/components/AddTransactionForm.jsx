@@ -94,6 +94,11 @@ const AddTransactionForm = ({
                   `}
                 >
                   {user.username}
+                  ${
+                      isSelected
+                        ? <Check className="text-green-500" size={20} />
+                        : ""
+                    }
                 </div>
               );
             })}
