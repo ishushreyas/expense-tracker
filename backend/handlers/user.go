@@ -103,7 +103,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
     // Parse the result into a User struct
     var user User
-    err := row.Scan(&user.ID, &user.Name, &user.IsActive)
+    err := row.Scan(&user.ID, &user.Name, &user.Email)
     if err != nil {
         if err == pgx.ErrNoRows {
             http.Error(w, "User not found", http.StatusNotFound)
