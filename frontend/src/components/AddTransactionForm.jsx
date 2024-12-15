@@ -93,7 +93,7 @@ const AddTransactionForm = ({
                     }
                   `}
                 >
-                  {user.name}
+                  {user.username}
                 </div>
               );
             })}
