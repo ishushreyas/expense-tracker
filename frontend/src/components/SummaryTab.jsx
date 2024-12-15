@@ -19,7 +19,7 @@ function SummaryTab({ summary, users }) {
       const user = users.find((u) => u.id === userId);
       return {
         id: userId,
-        name: user?.name || "Unknown",
+        username: user?.username || "Unknown",
         balance: balance,
         email: user?.email || "N/A",
         expenses: summary.user_expenses?.[userId] || 0
@@ -31,7 +31,7 @@ function SummaryTab({ summary, users }) {
   const totalExpenses = summary.total_expenses || 0;
   const highestExpenseUser = userBalanceData.reduce((max, user) => 
     (user.expenses > max.expenses) ? user : max, 
-    { expenses: 0, name: 'None' }
+    { expenses: 0, username: 'None' }
   );
 
   // Calculate the total balance across all users
@@ -124,7 +124,7 @@ function SummaryTab({ summary, users }) {
               >
                 <Info className="mr-2 text-blue-500" size={20} />
                 <span className="text-gray-700">
-                  {selectedUser.name} selected
+                  {selectedUser.username} selected
                 </span>
               </motion.div>
             )}
@@ -156,7 +156,7 @@ function SummaryTab({ summary, users }) {
                       />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-800">{user.name}</h3>
+                      <h3 className="font-bold text-gray-800">{user.username}</h3>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                   </div>
