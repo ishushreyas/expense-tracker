@@ -1,11 +1,11 @@
-package main
+package db
 
 import (
-	"database/sql"
+	"context"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Transaction struct {
@@ -20,10 +20,10 @@ type Transaction struct {
 }
 
 type TransactionRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewTransactionRepository(db *sql.DB) *TransactionRepository {
+func NewTransactionRepository(db *pgxpool.Pool) *TransactionRepository {
 	return &TransactionRepository{db: db}
 }
 
@@ -34,11 +34,12 @@ func (r *TransactionRepository) CreateTransaction(txn *Transaction) error {
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	_, err := r.db.Exec(
+		context.Background(),
 		query,
 		txn.ID,
 		txn.PayerID,
 		txn.Amount,
-		pq.Array(txn.Members),
+		txn.Members,
 		txn.Remark,
 		txn.CreatedAt,
 	)
