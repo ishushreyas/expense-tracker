@@ -18,7 +18,7 @@ import (
 
 // Initialize Firebase app
 func initFirebase() (*auth.Client, error) {
-	opt := option.WithCredentialsFile("/etc/secret/serviceAccountKey.json")
+	opt := option.WithCredentialsFile("/etc/secrets/serviceAccountKey.json")
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Firebase app: %v", err)
