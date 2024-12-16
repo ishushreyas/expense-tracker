@@ -56,7 +56,7 @@ func createSessionHandler(client *auth.Client) http.HandlerFunc {
 			return
 		}
 
-		if time.Now().Unix()-decodedToken.Claims["auth_time"].(int64) > 5*60 {
+		if time.Now().Unix()- int64(decodedToken.Claims["auth_time"].(float64)) > 5*60 {
 			http.Error(w, "Recent sign-in required", http.StatusUnauthorized)
 			return
 		}
