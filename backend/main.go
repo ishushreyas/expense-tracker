@@ -124,6 +124,9 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/sessionLogin", createSessionHandler(client)).Methods("POST")
+	r.HandleFunc("/check-login", verifySessionMiddleware(client, func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Success")
+	})).Methods("GET")
 	r.HandleFunc("/users", handlers.AddUser).Methods("POST")
 	r.HandleFunc("/users", handlers.GetUsers).Methods("GET")
 	r.HandleFunc("/users/{id}", handlers.GetUserByID).Methods("GET")
