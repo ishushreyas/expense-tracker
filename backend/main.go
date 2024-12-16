@@ -1,199 +1,116 @@
 package main
 
 import (
-    "log"
-    "fmt"
-    "strings"
-    "net/http"
-    "io/ioutil"
-    "os"
-    "github.com/dgrijalva/jwt-go"
-    "github.com/gorilla/mux"
-    "github.com/ishushreyas/expense-tracker/db"
-    "github.com/ishushreyas/expense-tracker/handlers"
-    "github.com/joho/godotenv"
-    "encoding/json"
-    "time"
-    "regexp"
-    "math/rand"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/gorilla/mux"
+	firebase "firebase.google.com/go"
+	"firebase.google.com/go/auth"
+	"google.golang.org/api/option"
 )
 
-var users = make(map[string]string) // Map for storing user email and OTP
-
-var jwtSecret []byte
-var emailStr string
-
-func init() {
-	if os.Getenv("RENDER_SERVICE_ID") == "" { // (Render sets RENDER_SERVICE_ID in production)
-		err := godotenv.Load()
-		if err != nil {
-			log.Println("env not found in RENDER development")
-		}
-	}
-	emailStr = os.Getenv("EMAIL_SERVICE")
-	if emailStr == "" {
-		log.Panic("error getting email key")	
-	}
-	jwtStr := os.Getenv("JWT_KEY")
-	if jwtStr == "" {
-		log.Panic("error getting jwt key")	
-	}
-	jwtSecret = []byte(jwtStr)
-}
-
-func sendOTPHandler(w http.ResponseWriter, r *http.Request) {
-	type Request struct {
-		Email string `json:"email"`
-	}
-	var reqt Request
-	json.NewDecoder(r.Body).Decode(&reqt)
-
-	// Validate email format
-	if !isValidEmail(reqt.Email) {
-		http.Error(w, "Invalid email format", http.StatusBadRequest)
-		return
-	}
-
-	otp := generateOTP() // Generate a random OTP
-	users[reqt.Email] = otp
-	url := "https://send.api.mailtrap.io/api/send"
-	method := "POST"
-
-	emailContent := fmt.Sprintf(`{
-		"from": {"email": "hello@demomailtrap.com", "name": "Expense Tracker"},
-		"to": [{"email": "%s"}],
-		"subject": "Your OTP Code",
-		"text": "Your OTP code is: %s",
-		"category": "Integration Test"
-	}`, reqt.Email, otp)
-
-	payload := strings.NewReader(emailContent)
-	
-	client := &http.Client {
-	}
-	req, err := http.NewRequest(method, url, payload)
-
+// Initialize Firebase app
+func initFirebase() (*auth.Client, error) {
+	opt := option.WithCredentialsFile("/etc/secret/serviceAccountKey.json")
+	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return nil, fmt.Errorf("error initializing Firebase app: %v", err)
 	}
-	req.Header.Add("Authorization", "Bearer " +  emailStr)
-	req.Header.Add("Content-Type", "application/json")
-
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(string(body))
+	return app.Auth(context.Background())
 }
 
-func verifyOTPHandler(w http.ResponseWriter, r *http.Request) {
-	type Request struct {
-		Email string `json:"email"`
-		OTP   string `json:"otp"`
+// Extract ID token from the request body
+func getIDTokenFromBody(r *http.Request) (string, error) {
+	var data map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return "", err
 	}
-	var req Request
-	json.NewDecoder(r.Body).Decode(&req)
-
-	if storedOTP, ok := users[req.Email]; !ok || storedOTP != req.OTP {
-		http.Error(w, "Invalid OTP", http.StatusUnauthorized)
-		return
+	token, exists := data["idToken"]
+	if !exists {
+		return "", fmt.Errorf("idToken not found in request body")
 	}
-
-	// Generate JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": req.Email,
-		"exp":   time.Now().Add(24 * time.Hour).Unix(),
-	})
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		return
-	}
-	w.Write([]byte(tokenString))
-}
-
-// Utility function to generate a random OTP
-func generateOTP() string {
-	rand.Seed(time.Now().UnixNano())
-	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
-	return otp
-}
-
-// Utility function to validate email format
-func isValidEmail(email string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return re.MatchString(email)
-}
-
-func verifyToken(r *http.Request) (*jwt.Token, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil, fmt.Errorf("no token found")
-	}
-
-	// Extract token from the Authorization header
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Validate the algorithm
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid signing method")
-		}
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid or expired token")
-	}
-
 	return token, nil
 }
 
-func checkLoginStatusHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := verifyToken(r)
-	if err != nil {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
+// Create a session for authenticated users
+func createSessionHandler(client *auth.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		idToken, err := getIDTokenFromBody(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		decodedToken, err := client.VerifyIDToken(r.Context(), idToken)
+		if err != nil {
+			http.Error(w, "Invalid ID token", http.StatusUnauthorized)
+			return
+		}
+
+		if time.Now().Unix()-decodedToken.Claims["auth_time"].(int64) > 5*60 {
+			http.Error(w, "Recent sign-in required", http.StatusUnauthorized)
+			return
+		}
+
+		expiresIn := time.Hour * 24 * 5
+		sessionCookie, err := client.SessionCookie(r.Context(), idToken, expiresIn)
+		if err != nil {
+			http.Error(w, "Failed to create session cookie", http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    sessionCookie,
+			MaxAge:   int(expiresIn.Seconds()),
+			HttpOnly: true,
+			Secure:   true,
+		})
+		w.Write([]byte(`{"status": "success"}`))
 	}
-	w.Write([]byte("User is logged in"))
+}
+
+// Middleware to verify session cookies
+func verifySessionMiddleware(client *auth.Client, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session")
+		if err != nil || cookie == nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		_, err = client.VerifySessionCookieAndCheckRevoked(r.Context(), cookie.Value)
+		if err != nil {
+			http.Error(w, "Invalid session", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
 }
 
 func main() {
-	// Initialize database
-	dbPool, err := db.InitDatabase()
+	client, err := initFirebase()
 	if err != nil {
-		log.Fatalf("Database initialization failed: %v", err)
+		log.Fatalf("Failed to initialize Firebase: %v", err)
 	}
-	defer db.CloseDatabase()
-
-	// Initialize repositories and controllers
-	transactionRepo := db.NewTransactionRepository(dbPool)
-	wsServer := handlers.NewWebSocketServer(transactionRepo)
-	transactionController := handlers.NewTransactionController(transactionRepo, wsServer)
-
-	// Start WebSocket server
-	go wsServer.Run()
-
-	// Define routes
-	transactionController.Routes()
 
 	r := mux.NewRouter()
-
+	r.HandleFunc("/sessionLogin", createSessionHandler(client)).Methods("POST")
 	r.HandleFunc("/users", handlers.AddUser).Methods("POST")
 	r.HandleFunc("/users", handlers.GetUsers).Methods("GET")
 	r.HandleFunc("/users/{id}", handlers.GetUserByID).Methods("GET")
 	r.HandleFunc("/users/{id}", handlers.DeleteUser).Methods("DELETE")
 	r.HandleFunc("/transactions", handlers.GetTransactions).Methods("GET")
 	r.HandleFunc("/transactions/{id}", handlers.GetTransactionByID).Methods("GET")
-	r.HandleFunc("/transactions", handlers.AddTransaction).Methods("POST")
+	r.HandleFunc("/transactions", verifySessionMiddleware(client, handlers.AddTransaction)).Methods("POST")
 	r.HandleFunc("/transactions/{id}", handlers.DeleteTransaction).Methods("DELETE")
 	r.HandleFunc("/transactions/{id}/soft-delete", handlers.SoftDeleteTransaction).Methods("DELETE")
 	r.HandleFunc("/summary", handlers.GenerateSummary).Methods("GET")
@@ -203,11 +120,6 @@ func main() {
 	r.HandleFunc("/payments/{id}", handlers.DeletePayment).Methods("DELETE")
 	r.HandleFunc("/payments/{id}/soft-delete", handlers.SoftDeletePayment).Methods("DELETE")
 	r.HandleFunc("/payment-summary", handlers.GeneratePaymentSummary).Methods("GET")
-
-	r.HandleFunc("/send-otp", sendOTPHandler).Methods("POST")
-	r.HandleFunc("/verify-otp", verifyOTPHandler).Methods("POST")
-
-	r.HandleFunc("/check-login", checkLoginStatusHandler).Methods("GET")
 
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
