@@ -6,10 +6,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
-},
+  plugins: [react()],
 define: {
     'process.env': process.env, // Expose variables to the build
-  },);
+  },
+});
