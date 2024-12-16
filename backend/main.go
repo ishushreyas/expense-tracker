@@ -104,6 +104,24 @@ func main() {
 		log.Fatalf("Failed to initialize Firebase: %v", err)
 	}
 
+	// Initialize database
+	dbPool, err := db.InitDatabase()
+	if err != nil {
+		log.Fatalf("Database initialization failed: %v", err)
+	}
+	defer db.CloseDatabase()
+
+	// Initialize repositories and controllers
+	transactionRepo := db.NewTransactionRepository(dbPool)
+	wsServer := handlers.NewWebSocketServer(transactionRepo)
+	transactionController := handlers.NewTransactionController(transactionRepo, wsServer)
+
+	// Start WebSocket server
+	go wsServer.Run()
+
+	// Define routes
+	transactionController.Routes()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/sessionLogin", createSessionHandler(client)).Methods("POST")
 	r.HandleFunc("/users", handlers.AddUser).Methods("POST")
