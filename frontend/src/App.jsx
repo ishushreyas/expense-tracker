@@ -7,9 +7,7 @@ const checkLoginStatus = async () => {
     const response = await axios.get('/check-login', {
       headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
     });
-    alert(response.data);
   } catch (error) {
-    alert('Not logged in');
   }
 };
 

@@ -6,7 +6,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, se
 
 // Initialize Firebase (Replace with your config)
 const firebaseConfig = {
-  apiKey: 'AIzaSyAOuHgyMR_00DESQy2ECf8fasqoyLeHppE',
+  apiKey: process.env.GOOGLE_API_KEY,
   authDomain: 'room-rent-job.firebaseapp.com',
   projectId: "room-rent-job",
   storageBucket: "room-rent-job.firebasestorage.app",
