@@ -3,6 +3,9 @@ import { Mail, Lock, Send, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 // Initialize Firebase (Replace with your config)
 const firebaseConfig = {
