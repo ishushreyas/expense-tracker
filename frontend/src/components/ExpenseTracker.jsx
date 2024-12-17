@@ -335,7 +335,7 @@ const handleDeletePayment = async (paymentId) => {
   }, [users]);
 
   return (
-    <div className="min-h-screen sm:pb-8 md:py-6">
+    <div className="min-h-screen md:py-6">
       {error && <ErrorNotification error={error} setError={setError} />}
       <DeleteConfirmationModal
         show={confirmDelete.show}

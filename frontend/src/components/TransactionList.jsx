@@ -45,12 +45,12 @@ const TransactionList = ({
   }
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+    <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sm:pb-8">
       <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
         <h3 className="text-xl font-bold text-gray-800 flex items-center">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
-            className="h-6 w-6 mr-2 text-blue-500" 
+            className="h-6 w-6 mr-2 text-black" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"
@@ -163,9 +163,11 @@ const TransactionList = ({
         </div>
       )}
 
-        {selectedTab === "payments" ? (
+        {selectedTab === "transactions" ? (
+		""
+      ) : (
               <Payments users={users} currentUser={users[1]} />
-      ) : ("")}
+      )}
     </div>
   );
 };

@@ -109,7 +109,7 @@ function SummaryTab({ summary, users }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="bg-white shadow-xl rounded-xl p-8"
+          className="md:bg-white md:shadow-xl rounded-xl md:p-8"
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center">
