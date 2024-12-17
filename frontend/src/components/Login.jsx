@@ -6,6 +6,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, se
 import * as dotenv from "dotenv";
 
 dotenv.config();
+console.log('Environment:', import.meta.env.VITE_KEY);
 
 // Initialize Firebase (Replace with your config)
 const firebaseConfig = {
