@@ -336,49 +336,48 @@ const handleDeletePayment = async (paymentId) => {
   }, [users]);
 
   return (
-    <div className="min-h-screen md:py-6">
-      {error && <ErrorNotification error={error} setError={setError} />}
-      <DeleteConfirmationModal
-        show={confirmDelete.show}
-        onClose={() => setConfirmDelete({ id: null, show: false })}
-        onConfirm={() => handleDeleteTransaction(confirmDelete.id)}
+  <div className="min-h-screen md:py-6 pb-20">
+    {error && <ErrorNotification error={error} setError={setError} />}
+    <DeleteConfirmationModal
+      show={confirmDelete.show}
+      onClose={() => setConfirmDelete({ id: null, show: false })}
+      onConfirm={() => handleDeleteTransaction(confirmDelete.id)}
+    />
+    <div className="w-full max-w-4xl mx-auto md:rounded-3xl overflow-hidden sm:mb-14">
+      <Tabs 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow-lg"
       />
-      <div className="w-full max-w-4xl mx-auto md:rounded-3xl overflow-hidden sm:mb-14">
-	<Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-        {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
-        {activeTab === "transactions" && (
-          <TransactionList
-	    users={users} 
-	    newTransaction={newTransaction} 
-		setNewTransaction={setNewTransaction}  
-		handleAddTransaction={handleAddTransaction}
-            transactions={transactions}
-	    selectedTab={activeTab}
-            setSelectedTransaction={setSelectedTransaction}
-            setConfirmDelete={setConfirmDelete}
-            loading={loading}
-	    error={error}
-          />
-        )}
-        {selectedTransaction && (
-          <TransactionDetails
-            transaction={selectedTransaction}
-            onClose={handleTransactionClose}
-            onEditTransaction={handleEditTransaction}
-            users={users}
-          />
-        )}
-        {activeTab === "payments" && (
-		   <Payments users={users} currentUser={users[1]} />   
-        )}
-      </div>
-        {loading && (
-  <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-    <Loader className="animate-spin h-16 w-16 text-gray-500" />
-  </div>
-)}
+      {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
+      {activeTab === "transactions" && (
+        <TransactionList
+          users={users}
+          newTransaction={newTransaction}
+          setNewTransaction={setNewTransaction}
+          handleAddTransaction={handleAddTransaction}
+          transactions={transactions}
+          selectedTab={activeTab}
+          setSelectedTransaction={setSelectedTransaction}
+          setConfirmDelete={setConfirmDelete}
+          loading={loading}
+          error={error}
+        />
+      )}
+      {selectedTransaction && (
+        <TransactionDetails
+          transaction={selectedTransaction}
+          onClose={handleTransactionClose}
+          onEditTransaction={handleEditTransaction}
+          users={users}
+        />
+      )}
+      {activeTab === "payments" && <Payments users={users} currentUser={users[1]} />}
     </div>
-  );
-}
-
-export default ExpenseTracker;
+    {loading && (
+      <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
+        <Loader className="animate-spin h-16 w-16 text-gray-500" />
+      </div>
+    )}
+  </div>
+);
