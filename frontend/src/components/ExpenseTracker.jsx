@@ -381,3 +381,6 @@ const handleDeletePayment = async (paymentId) => {
     )}
   </div>
 );
+}
+
+export default ExpenseTracker;
