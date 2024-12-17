@@ -56,7 +56,7 @@ export const SendPayment = ({
   const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { sendPayment } = useWebSocket('ws://room-rent-job.onrender.com//ws/payments');
+  const { sendPayment } = useWebSocket('wss://room-rent-job.onrender.com/ws/payments');
 
   const handleSendPayment = async (e) => {
     e.preventDefault();
@@ -168,7 +168,7 @@ export const ReceivePayment = ({
   onPaymentReceived 
 }) => {
   const [payments, setPayments] = useState([]);
-  const { socket, payments: wsPayments } = useWebSocket('ws://room-rent-job.onrender.com//ws/payments');
+  const { socket, payments: wsPayments } = useWebSocket('wss://room-rent-job.onrender.com/ws/payments');
 
   useEffect(() => {
     // Filter payments where current user is a member

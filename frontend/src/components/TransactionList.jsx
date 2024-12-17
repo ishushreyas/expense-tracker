@@ -75,24 +75,7 @@ const TransactionList = ({
             <span className="hidden md:inline">Add Transaction</span>
           </button>
         ) : (
-          <div className="flex space-x-3">
-            <button 
-              className="bg-green-500 text-white rounded-xl p-3 shadow-lg hover:bg-green-600 transition-all duration-300 flex items-center space-x-2"
-              onClick={null} // Replace with actual receive payment handler
-              aria-label="Receive Payment"
-            >
-              <Download size={24} />
-              <span className="hidden md:inline">Receive</span>
-            </button>
-            <button 
-              className="bg-blue-500 text-white rounded-xl p-3 shadow-lg hover:bg-blue-600 transition-all duration-300 flex items-center space-x-2"
-              onClick={null} // Replace with actual send payment handler
-              aria-label="Send Payment"
-            >
-              <Send size={24} />
-              <span className="hidden md:inline">Send</span>
-            </button>
-          </div>
+		""
         )}
       </div>
       
@@ -180,7 +163,7 @@ const TransactionList = ({
         </div>
       )}
 
-        {selectedTab === 'transactions' ? (
+        {selectedTab === 'payments' ? (
               <Payments users={users} currentUser={users[1]} />
       ) : ("")}
     </div>
