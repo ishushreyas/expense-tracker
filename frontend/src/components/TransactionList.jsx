@@ -43,7 +43,7 @@ const TransactionList = ({
   }
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sm:pb-8">
+    <div className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
         <h3 className="text-xl font-bold text-gray-800 flex items-center">
           <svg 
@@ -96,7 +96,7 @@ const TransactionList = ({
           <p className="text-gray-500 text-center font-medium">No transactions recorded</p>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-gray-100 sm:mb-8">
           {transactions.map((txn) => (
             <li
               key={txn.id}
