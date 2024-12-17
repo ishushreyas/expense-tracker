@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Trash2, FileEdit, AlertTriangle, Plus, X, Send, Download } from "lucide-react";
 import AddTransactionForm from "./AddTransactionForm";
-import { Payments } from './Payments';
 
 const TransactionList = ({ 
   users,

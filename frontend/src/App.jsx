@@ -4,8 +4,10 @@ import Login from './components/Login';
 
 const checkLoginStatus = async () => {
   try {
-    const response = await axios.get('/check-login', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    const response = await fetch('/api/check-login', {
+	    method: "GET",
+    }).then((response) => {
+	    setIsLoggedIn(true);
     });
   } catch (error) {
   }
