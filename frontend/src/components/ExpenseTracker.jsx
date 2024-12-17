@@ -368,25 +368,7 @@ const handleDeletePayment = async (paymentId) => {
           />
         )}
         {activeTab === "payments" && (
-          <TransactionList
-	    users={users} 
-	    newTransaction={newPayment} 
-		setNewTransaction={setNewPayment}  
-		handleAddTransaction={handleAddPayment}
-            transactions={payments}
-            setSelectedTransaction={setSelectedPayment}
-            setConfirmDelete={setConfirmDelete}
-            loading={loading}
-	    error={error}
-          />
-        )}
-        {selectedTransaction && (
-          <TransactionDetails
-            transaction={selectedPayment}
-            onClose={handleTransactionClose}
-            onEditTransaction={handleEditPayment}
-            users={users}
-          />
+		   <Payments users={users} currentUser={users[1]} />   
         )}
       </div>
         {loading && (

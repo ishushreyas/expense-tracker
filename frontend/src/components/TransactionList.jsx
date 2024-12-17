@@ -14,7 +14,6 @@ const TransactionList = ({
   loading,
   error,
   onAddTransaction,
-  selectedTab // New prop to determine tab
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -64,8 +63,6 @@ const TransactionList = ({
           </svg>
           Transaction History
         </h3>
-        
-        {selectedTab === 'transactions' ? (
           <button 
             className="bg-black text-white rounded-xl p-3 shadow-lg hover:bg-gray-800 transition-all duration-300 flex items-center space-x-2"
             onClick={() => setIsAddDialogOpen(true)}
@@ -74,9 +71,6 @@ const TransactionList = ({
             <Plus size={24} />
             <span className="hidden md:inline">Add Transaction</span>
           </button>
-        ) : (
-		""
-        )}
       </div>
       
       {/* Rest of the existing rendering logic remains the same */}
@@ -161,12 +155,6 @@ const TransactionList = ({
             />
           </div>
         </div>
-      )}
-
-        {selectedTab === "transactions" ? (
-		""
-      ) : (
-              <Payments users={users} currentUser={users[1]} />
       )}
     </div>
   );
