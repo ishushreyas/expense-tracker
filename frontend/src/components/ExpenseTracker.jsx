@@ -352,6 +352,7 @@ const handleDeletePayment = async (paymentId) => {
 		setNewTransaction={setNewTransaction}  
 		handleAddTransaction={handleAddTransaction}
             transactions={transactions}
+	    selectedTab={activeTab}
             setSelectedTransaction={setSelectedTransaction}
             setConfirmDelete={setConfirmDelete}
             loading={loading}
