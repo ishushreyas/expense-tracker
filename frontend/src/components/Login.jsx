@@ -5,9 +5,8 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
 
 // Initialize Firebase (Replace with your config)
-const apiUrl = import.meta.env.VITE_API_KEY;
 const firebaseConfig = {
-  apiKey: apiUrl,
+  apiKey: "AIzaSyAOuHgyMR_00DESQy2ECf8fasqoyLeHppE",
   authDomain: 'room-rent-job.firebaseapp.com',
   projectId: "room-rent-job",
   storageBucket: "room-rent-job.firebasestorage.app",
