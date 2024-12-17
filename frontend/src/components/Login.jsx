@@ -3,14 +3,10 @@ import { Mail, Lock, Send, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
-import * as dotenv from "dotenv";
-
-dotenv.config();
-console.log('Environment:', import.meta.env.VITE_KEY);
 
 // Initialize Firebase (Replace with your config)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
+  apiKey: process.env.VITE_API_KEY,
   authDomain: 'room-rent-job.firebaseapp.com',
   projectId: "room-rent-job",
   storageBucket: "room-rent-job.firebasestorage.app",
@@ -45,7 +41,7 @@ const Login = ({ setIsLoggedIn }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('login'); // 'login', 'signup', 'otp', 'reset'
+  const [step, setStep] = useState('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
