@@ -5,6 +5,8 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
+ARG GOOGLE_API_KEY
+ENV GOOGLE_API_KEY=${GOOGLE_API_KEY}
 RUN npm run build
 
 # Stage 2: Build Backend
