@@ -183,6 +183,7 @@ const TransactionDetails = ({
               <>
                 <div className="flex flex-wrap gap-2">
             {users.map((user) => {
+		    const isSelected = editedTransaction.members.includes(user.id);
               return (
                 <div
                   key={user.id}
@@ -198,11 +199,7 @@ const TransactionDetails = ({
                   `}
                 >
                   {user.username}
-                  ${
-                      isSelected
-                        ? <BadgeCheck className="text-green-500" size={20} />
-                        : ""
-                    }
+		      {isSelected && <BadgeCheck className="text-green-500" size={20} />}
                 </div>
               );
             })}

@@ -39,6 +39,15 @@ func getIDTokenFromBody(r *http.Request) (string, error) {
 	return token, nil
 }
 
+// Helper function to get logged-in user information from context
+func getLoggedInUser(r *http.Request) (*auth.Token, error) {
+	user := r.Context().Value("user")
+	if user == nil {
+		return nil, fmt.Errorf("user not found in context")
+	}
+	return user.(*auth.Token), nil
+}
+
 // Create a session for authenticated users
 func createSessionHandler(client *auth.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +89,7 @@ func createSessionHandler(client *auth.Client) http.HandlerFunc {
 }
 
 // Middleware to verify session cookies
+// Middleware to verify session cookies and attach user information to the context
 func verifySessionMiddleware(client *auth.Client, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session")
@@ -88,13 +98,16 @@ func verifySessionMiddleware(client *auth.Client, next http.HandlerFunc) http.Ha
 			return
 		}
 
-		_, err = client.VerifySessionCookieAndCheckRevoked(r.Context(), cookie.Value)
+		// Verify session cookie and check for revocation
+		decodedToken, err := client.VerifySessionCookieAndCheckRevoked(r.Context(), cookie.Value)
 		if err != nil {
 			http.Error(w, "Invalid session", http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		// Add user info to the request context
+		ctx := context.WithValue(r.Context(), "user", decodedToken)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
@@ -124,9 +137,21 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/sessionLogin", createSessionHandler(client)).Methods("POST")
-	r.HandleFunc("/check-login", verifySessionMiddleware(client, func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Success")
-	})).Methods("GET")
+	r.HandleFunc("/profile", verifySessionMiddleware(client, func(w http.ResponseWriter, r *http.Request) {
+	user, err := getLoggedInUser(r)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Example: Send back user information
+	response := map[string]interface{}{
+		"uid":   user.UID,
+		"email": user.Claims["email"], // Assuming email claim is set in Firebase
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+})).Methods("GET")
 	r.HandleFunc("/users", handlers.AddUser).Methods("POST")
 	r.HandleFunc("/users", handlers.GetUsers).Methods("GET")
 	r.HandleFunc("/users/{id}", handlers.GetUserByID).Methods("GET")

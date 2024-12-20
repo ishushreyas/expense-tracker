@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Send, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Send, CheckCircle, Eye, EyeOff, User } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
@@ -14,9 +14,11 @@ const firebaseConfig = {
   appId: "1:106189063159:web:f9ecb7c9950c022c3f64f2",
   measurementId: "G-6EL9RG936P"
 };
+
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
+
 const postIdTokenToSessionLogin = async (url, idToken, csrfToken) => {
   const response = await fetch(url, {
     method: 'POST',
@@ -30,6 +32,7 @@ const postIdTokenToSessionLogin = async (url, idToken, csrfToken) => {
     throw new Error('Failed to login');
   }
 };
+
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -37,9 +40,13 @@ const getCookie = (name) => {
   return null;
 };
 
-const Login = ({ setIsLoggedIn }) => {
+const Login = ({ setIsLoggedIn, setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -54,20 +61,11 @@ const Login = ({ setIsLoggedIn }) => {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password).then((user) => {
-  // Get the user's ID token as it is needed to exchange for a session cookie.
-  return user.user.getIdToken().then(idToken => {
-    // Session login endpoint is queried and the session cookie is set.
-    // CSRF protection should be taken into account.
-    // ...
-    const csrfToken = getCookie('csrfToken')
-    return postIdTokenToSessionLogin('/api/sessionLogin', idToken, csrfToken);
-  });
-}).then(() => {
-  // A page redirect would suffice as the persistence is set to NONE.
-  return signOut(auth);
-}).then(() => {
-});
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      const csrfToken = getCookie('csrfToken');
+      await postIdTokenToSessionLogin('/api/sessionLogin', idToken, csrfToken);
+      await signOut(auth);
       setIsLoggedIn(true);
     } catch (error) {
       setError(error.message);
@@ -77,8 +75,8 @@ const Login = ({ setIsLoggedIn }) => {
   };
 
   const handleSignup = async () => {
-    if (!email || !password) {
-      setError('Email and password are required.');
+    if (!email || !password || !firstName || !lastName || !username) {
+      setError('All fields are required.');
       return;
     }
 
@@ -86,6 +84,8 @@ const Login = ({ setIsLoggedIn }) => {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
+      // Here you would typically also store the additional user info (firstName, lastName, username)
+      // in your database or Firebase user profile
       setStep('login');
     } catch (error) {
       setError(error.message);
@@ -114,123 +114,195 @@ const Login = ({ setIsLoggedIn }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 p-4">
-      <div className="bg-white shadow-2xl rounded-xl p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         {step === 'login' && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-600 mb-4 text-center">Login</h2>
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">Login</h2>
+            </div>
+
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
-                type="password"
-                placeholder="Enter your password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
             </div>
+
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
-            <p className="text-center text-sm text-gray-500">
-              Don't have an account?{' '}
-              <button onClick={() => setStep('signup')} className="text-blue-500 underline">
+
+            <div className="text-sm text-center">
+              <span>Don't have an account? </span>
+              <button onClick={() => setStep('signup')} className="text-blue-600 hover:text-blue-500 font-medium">
                 Sign up
               </button>
-            </p>
-            <p className="text-center text-sm text-gray-500">
-              Forgot your password?{' '}
-              <button onClick={() => setStep('reset')} className="text-blue-500 underline">
-                Reset Password
+            </div>
+
+            <div className="text-sm text-center">
+              <button onClick={() => setStep('reset')} className="text-blue-600 hover:text-blue-500 font-medium">
+                Forgot your password?
               </button>
-            </p>
+            </div>
           </div>
         )}
 
         {step === 'signup' && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-600 mb-4 text-center">Sign Up</h2>
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">Sign Up</h2>
+            </div>
+
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="First Name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
-                type="password"
-                placeholder="Enter your password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
             </div>
+
             <button
               onClick={handleSignup}
               disabled={loading}
-              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {loading ? 'Signing up...' : 'Sign Up'}
             </button>
-            <p className="text-center text-sm text-gray-500">
-              Already have an account?{' '}
-              <button onClick={() => setStep('login')} className="text-blue-500 underline">
+
+            <div className="text-sm text-center">
+              <span>Already have an account? </span>
+              <button onClick={() => setStep('login')} className="text-blue-600 hover:text-blue-500 font-medium">
                 Login
               </button>
-            </p>
+            </div>
           </div>
         )}
 
         {step === 'reset' && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-600 mb-4 text-center">Reset Password</h2>
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">Reset Password</h2>
+            </div>
+
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
             <button
               onClick={handlePasswordReset}
               disabled={loading}
-              className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {loading ? 'Sending email...' : 'Reset Password'}
             </button>
-            <p className="text-center text-sm text-gray-500">
-              Remembered your password?{' '}
-              <button onClick={() => setStep('login')} className="text-blue-500 underline">
+
+            <div className="text-sm text-center">
+              <span>Remembered your password? </span>
+              <button onClick={() => setStep('login')} className="text-blue-600 hover:text-blue-500 font-medium">
                 Login
               </button>
-            </p>
+            </div>
           </div>
         )}
 
         {error && (
-          <div className="mt-4 bg-red-50 border border-red-300 text-red-600 px-4 py-3 rounded-lg text-center">
+          <div className="mt-4 text-center text-sm text-red-600">
             {error}
           </div>
         )}
