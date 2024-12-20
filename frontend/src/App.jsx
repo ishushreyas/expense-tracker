@@ -8,7 +8,7 @@ function App() {
 
   const checkLoginStatus = async () => {
     try {
-      const response = await fetch('/api/check-login', {
+      const response = await fetch('/api/profile', {
         method: "GET",
         headers: {
           'Content-Type': 'application/json',

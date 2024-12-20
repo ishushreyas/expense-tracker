@@ -18,7 +18,7 @@ import UsersTab from "./UsersTab";
 import TransactionDetails from "./TransactionDetails"; 
 import { Payments } from './Payments';
 
-function ExpenseTracker() {
+function ExpenseTracker( {currentUser} ) {
   const [activeTab, setActiveTab] = useState("summary");
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
