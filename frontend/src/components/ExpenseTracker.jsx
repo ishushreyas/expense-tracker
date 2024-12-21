@@ -349,7 +349,7 @@ const handleDeletePayment = async (paymentId) => {
         setActiveTab={setActiveTab} 
         className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow-lg"
       />
-      {activeTab === "summary" && <SummaryTab users={users} summary={summary} />}
+      {activeTab === "summary" && <SummaryTab users={users} summary={summary} currentUser={currentUser} />}
       {activeTab === "transactions" && (
         <TransactionList
           users={users}
