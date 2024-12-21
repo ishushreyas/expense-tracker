@@ -33,159 +33,117 @@ function SummaryTab({ summary, users }) {
     (user.expenses > max.expenses) ? user : max, 
     { expenses: 0, username: 'None' }
   );
-
-  // Calculate the total balance across all users
   const totalBalance = userBalanceData.reduce((sum, user) => sum + user.balance, 0);
 
+  // Email truncation function
+  const truncateEmail = (email) => {
+    if (email.length > 20) {
+      const [username, domain] = email.split('@');
+      return `${username.slice(0, 10)}...@${domain}`;
+    }
+    return email;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-10 text-center"
+          className="mb-6 md:mb-10 text-center"
         >
-          <h1 className="text-4xl font-extrabold text-gray-800 flex items-center justify-center">
-            <CircleDollarSign className="mr-4 text-indigo-600" size={48} />
-            Dashboard
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 flex items-center justify-center">
+            <CircleDollarSign className="mr-3 text-blue-600" size={36} />
+            Financial Dashboard
           </h1>
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-            Comprehensive overview of your team's financial activities
+          <p className="text-gray-600 mt-2">
+            Team Financial Overview
           </p>
         </motion.div>
 
-        {/* Top Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* Total Expenses Card */}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Total Expenses */}
           <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-indigo-500"
+            whileHover={{ scale: 1.02 }}
+            className="bg-white rounded-lg p-4 shadow-md"
           >
-            <div className="flex justify-between items-center mb-4">
-              <TrendingUp className="text-indigo-600" size={32} />
-              <span className="text-gray-500 font-medium">Total Expenses</span>
+            <div className="flex items-center justify-between">
+              <TrendingUp className="text-blue-600" size={24} />
+              <span className="text-sm text-gray-500">Total Expenses</span>
             </div>
-            <div className="text-3xl font-bold text-gray-800">
-              ₹{totalExpenses.toFixed(2)}
+            <div className="mt-2 text-2xl font-bold">₹{totalExpenses.toFixed(2)}</div>
+          </motion.div>
+
+          {/* Highest Spender */}
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            className="bg-white rounded-lg p-4 shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <Users className="text-green-600" size={24} />
+              <span className="text-sm text-gray-500">Top Spender</span>
+            </div>
+            <div className="mt-2">
+              <div className="text-xl font-bold">{highestExpenseUser.username}</div>
+              <div className="text-green-600">₹{highestExpenseUser.expenses.toFixed(2)}</div>
             </div>
           </motion.div>
 
-          {/* Highest Expense User Card */}
+          {/* Total Balance */}
           <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-green-500"
+            whileHover={{ scale: 1.02 }}
+            className="bg-white rounded-lg p-4 shadow-md"
           >
-            <div className="flex justify-between items-center mb-4">
-              <Users className="text-green-600" size={32} />
-              <span className="text-gray-500 font-medium">Highest Spender</span>
+            <div className="flex items-center justify-between">
+              <ReceiptText className="text-purple-600" size={24} />
+              <span className="text-sm text-gray-500">Net Balance</span>
             </div>
-            <div className="text-xl font-bold text-gray-800">
-              {highestExpenseUser.name}
-            </div>
-            <div className="text-lg text-green-600">
-              ₹{highestExpenseUser.expenses.toFixed(2)}
-            </div>
-          </motion.div>
-
-          {/* New Creative Metric Card */}
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            className="bg-white shadow-lg rounded-xl p-6 border-l-4 border-purple-500"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <ReceiptText className="text-purple-600" size={32} />
-              <span className="text-gray-500 font-medium">Total Balance Across All Users</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-800">
-              ₹{totalBalance.toFixed(2)}
-            </div>
+            <div className="mt-2 text-2xl font-bold">₹{totalBalance.toFixed(2)}</div>
           </motion.div>
         </div>
 
-        {/* User Details Section */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="md:bg-white md:shadow-xl rounded-xl md:p-8"
-        >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-              <Users className="mr-3 text-indigo-600" size={32} />
-              User Balance Details
-            </h2>
-            {selectedUser && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center bg-gray-100 px-4 py-2 rounded-full"
-              >
-                <Info className="mr-2 text-blue-500" size={20} />
-                <span className="text-gray-700">
-                  {selectedUser.username} selected
-                </span>
-              </motion.div>
-            )}
-          </div>
+        {/* User Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {userBalanceData.map((user) => (
+            <motion.div 
+              key={user.id}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => setSelectedUser(user)}
+              className={`
+                bg-white rounded-lg p-4 cursor-pointer shadow-md
+                ${selectedUser?.id === user.id ? 'ring-2 ring-blue-400' : ''}
+              `}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`
+                  w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                  ${user.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}
+                `}>
+                  <Users size={20} className={user.balance >= 0 ? 'text-green-600' : 'text-red-600'} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 truncate">{user.username}</h3>
+                  <div className="text-sm text-gray-500 truncate" title={user.email}>
+                    {truncateEmail(user.email)}
+                  </div>
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className={`text-lg font-semibold ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₹{user.balance.toFixed(2)}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Expenses: ₹{user.expenses.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            {userBalanceData.map((user) => (
-              <motion.div 
-                key={user.id}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setSelectedUser(user)}
-                className={`
-                  p-5 rounded-xl cursor-pointer transition-all 
-                  ${selectedUser?.id === user.id 
-                    ? 'ring-4 ring-indigo-300 bg-indigo-50' 
-                    : 'bg-white hover:bg-gray-50'}
-                  shadow-md border border-gray-100
-                `}
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center">
-                    <div className={`
-                      w-12 h-12 rounded-full flex items-center justify-center mr-4
-                      ${user.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}
-                    `}>
-                      <Users 
-                        className={user.balance >= 0 ? 'text-green-600' : 'text-red-600'}
-                        size={24} 
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">{user.username}</h3>
-                      <p className="text-sm text-gray-500">{user.email}</p>
-                    </div>
-                  </div>
-                  {user.balance >= 0 
-                    ? <ArrowUpRight className="text-green-600" /> 
-                    : <ArrowDownRight className="text-red-600" />
-                  }
-                </div>
-                <div className="flex justify-between">
-                  <div className="text-sm text-gray-600">Balance</div>
-                  <div className={`
-                    text-xl font-bold
-                    ${user.balance >= 0 ? 'text-green-600' : 'text-red-600'}
-                  `}>
-                    ₹{user.balance.toFixed(2)}
-                  </div>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <div className="text-sm text-gray-600">Total Expenses</div>
-                  <div className="text-lg font-semibold text-gray-800">
-                    ₹{user.expenses.toFixed(2)}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Detailed User Modal */}
+        {/* User Detail Modal */}
         <AnimatePresence>
           {selectedUser && (
             <motion.div 
@@ -196,44 +154,40 @@ function SummaryTab({ summary, users }) {
               onClick={() => setSelectedUser(null)}
             >
               <motion.div 
-                initial={{ scale: 0.7 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.7 }}
-                className="bg-white rounded-2xl p-8 max-w-md w-full"
-                onClick={(e) => e.stopPropagation()}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-lg p-6 max-w-sm w-full"
+                onClick={e => e.stopPropagation()}
               >
                 <div className="text-center">
                   <div className={`
-                    mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-4
+                    w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4
                     ${selectedUser.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}
                   `}>
-                    <Users 
-                      className={selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}
-                      size={48} 
-                    />
+                    <Users size={32} className={selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'} />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-800">{selectedUser.name}</h2>
-                  <p className="text-gray-600 mb-4">{selectedUser.email}</p>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <h2 className="text-xl font-bold mb-1">{selectedUser.username}</h2>
+                  <p className="text-gray-500 text-sm break-all mb-4">{selectedUser.email}</p>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                      <p className="text-gray-500">Balance</p>
-                      <div className={`
-                        text-2xl font-bold
-                        ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}
-                      `}>
+                      <p className="text-sm text-gray-500">Balance</p>
+                      <p className={`text-xl font-bold ${selectedUser.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         ₹{selectedUser.balance.toFixed(2)}
-                      </div>
+                      </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Total Expenses</p>
-                      <div className="text-2xl font-bold text-gray-800">
+                      <p className="text-sm text-gray-500">Expenses</p>
+                      <p className="text-xl font-bold text-gray-800">
                         ₹{selectedUser.expenses.toFixed(2)}
-                      </div>
+                      </p>
                     </div>
                   </div>
+                  
                   <button 
                     onClick={() => setSelectedUser(null)}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition-colors"
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Close
                   </button>
