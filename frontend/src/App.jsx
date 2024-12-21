@@ -37,7 +37,7 @@ function App() {
   return (
     <>
       {isLoggedIn ? (
-        <ExpenseTracker user={user} /> // Pass user details to ExpenseTracker component
+        <ExpenseTracker currentUser={user} /> // Pass user details to ExpenseTracker component
       ) : (
         <Login setIsLoggedIn={setIsLoggedIn} setUser={setUser} /> // Pass setUser to Login component
       )}
