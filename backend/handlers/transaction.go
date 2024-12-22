@@ -411,11 +411,6 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 	for _, t := range transactions {
 		totalExpense += t.Amount
 
-		// Category expenses
-		if t.Category != "" {
-			categoryExpenses[t.Category] += t.Amount
-		}
-
 		// User expenses
 		userExpenses[t.PayerID] += t.Amount
 
