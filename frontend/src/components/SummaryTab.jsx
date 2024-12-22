@@ -163,7 +163,7 @@ function SummaryTab() {
                 />
               </div>
               <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                ₹{currentMonth.average_transaction.toFixed(2)}
+                ₹{currentMonth.average_transaction}
               </p>
             </div>
 
