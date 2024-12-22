@@ -305,65 +305,224 @@ func SoftDeleteTransaction(w http.ResponseWriter, r *http.Request) {
 
 // calculateBalances calculates the net balance for each member.
 func GenerateSummary(w http.ResponseWriter, r *http.Request) {
+	// Parse query parameters for date range
+	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
+
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
+
+	// Build query with date filtering if provided
 	sqlQuery := `
-    SELECT id, payer_id, amount, members, created_at, remark, is_deleted, deleted_at
-    FROM transactions
-    WHERE is_deleted = false
-`
+		WITH daily_stats AS (
+			SELECT
+				DATE(created_at) as date,
+				COUNT(*) as daily_count,
+				SUM(amount) as daily_total,
+				MAX(amount) as max_transaction
+			FROM transactions
+			WHERE is_deleted = false
+			AND ($1 = '' OR created_at >= $1::timestamp)
+			AND ($2 = '' OR created_at <= $2::timestamp)
+			GROUP BY DATE(created_at)
+		),
+		category_expenses AS (
+			SELECT
+				category,
+				SUM(amount) as total_amount,
+				COUNT(*) as transaction_count
+			FROM transactions t
+			JOIN transaction_categories tc ON t.id = tc.transaction_id
+			WHERE t.is_deleted = false
+			AND ($1 = '' OR t.created_at >= $1::timestamp)
+			AND ($2 = '' OR t.created_at <= $2::timestamp)
+			GROUP BY category
+		)
+		SELECT
+			t.id,
+			t.payer_id,
+			t.amount,
+			t.members,
+			t.created_at,
+			t.remark,
+			t.is_deleted,
+			t.deleted_at,
+			tc.category,
+			u.username,
+			u.email
+		FROM transactions t
+		LEFT JOIN transaction_categories tc ON t.id = tc.transaction_id
+		LEFT JOIN users u ON t.payer_id = u.id
+		WHERE t.is_deleted = false
+		AND ($1 = '' OR t.created_at >= $1::timestamp)
+		AND ($2 = '' OR t.created_at <= $2::timestamp)
+	`
+
 	// Execute query
-	rows, err := db.Pool.Query(ctx, sqlQuery)
+	rows, err := db.Pool.Query(ctx, sqlQuery, startDate, endDate)
 	if err != nil {
 		http.Error(w, "Failed to retrieve transactions: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	// Collect rows
-	expenses, err := pgx.CollectRows(rows, pgx.RowToStructByName[Transaction])
-	if err != nil {
-		http.Error(w, "Failed to process transactions: "+err.Error(), http.StatusInternalServerError)
-		return
+	// Data structures for aggregation
+	type TransactionWithMeta struct {
+		Transaction
+		Category string `json:"category"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
 	}
 
-	// Handle empty result
-	if len(expenses) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	balances := make(map[uuid.UUID]float64)
-	user_expense := make(map[uuid.UUID]float64)
-	totalExpense := 0.00
+	var transactions []TransactionWithMeta
+	userMap := make(map[uuid.UUID]struct {
+		Username string
+		Email    string
+	})
 
-	for _, expense := range expenses {
-		// Split the members into individual names
-		memberCount := float64(len(expense.Members))
-		if memberCount == 0 {
-			continue
+	// Collect and process rows
+	for rows.Next() {
+		var t TransactionWithMeta
+		err := rows.Scan(
+			&t.ID,
+			&t.PayerID,
+			&t.Amount,
+			&t.Members,
+			&t.CreatedAt,
+			&t.Remark,
+			&t.IsDeleted,
+			&t.DeletedAt,
+			&t.Category,
+			&t.Username,
+			&t.Email,
+		)
+		if err != nil {
+			http.Error(w, "Failed to scan row: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		transactions = append(transactions, t)
+		userMap[t.PayerID] = struct {
+			Username string
+			Email    string
+		}{t.Username, t.Email}
+	}
+
+	// Calculate various metrics
+	var (
+		totalExpense     float64
+		categoryExpenses = make(map[string]float64)
+		userExpenses    = make(map[uuid.UUID]float64)
+		userBalances    = make(map[uuid.UUID]float64)
+		dailyStats      = make(map[string]struct {
+			Count     int
+			Total     float64
+			MaxAmount float64
+		})
+		transactionCount = len(transactions)
+	)
+
+	// Process transactions
+	for _, t := range transactions {
+		totalExpense += t.Amount
+
+		// Category expenses
+		if t.Category != "" {
+			categoryExpenses[t.Category] += t.Amount
 		}
 
-		user_expense[expense.PayerID] += expense.Amount
-		// Calculate each member's share
-		share := expense.Amount / memberCount
-		totalExpense += expense.Amount
+		// User expenses
+		userExpenses[t.PayerID] += t.Amount
 
-		// Deduct shares from members and add the full amount to the payer
-		for _, member := range expense.Members {
-			balances[member] -= share
+		// Calculate balances
+		memberCount := float64(len(t.Members))
+		if memberCount > 0 {
+			share := t.Amount / memberCount
+			for _, member := range t.Members {
+				userBalances[member] -= share
+			}
+			userBalances[t.PayerID] += t.Amount
 		}
-		balances[expense.PayerID] += expense.Amount
+
+		// Daily statistics
+		dateKey := t.CreatedAt.Format("2006-01-02")
+		daily := dailyStats[dateKey]
+		daily.Count++
+		daily.Total += t.Amount
+		if t.Amount > daily.MaxAmount {
+			daily.MaxAmount = t.Amount
+		}
+		dailyStats[dateKey] = daily
 	}
 
-	// Prepare response with pagination info
+	// Calculate additional metrics
+	var (
+		avgTransactionAmount float64
+		maxTransactionAmount float64
+		activeUserCount     = len(userExpenses)
+	)
+
+	if transactionCount > 0 {
+		avgTransactionAmount = totalExpense / float64(transactionCount)
+	}
+
+	for _, t := range transactions {
+		if t.Amount > maxTransactionAmount {
+			maxTransactionAmount = t.Amount
+		}
+	}
+
+	// Prepare users array
+	users := make([]map[string]interface{}, 0, len(userMap))
+	for id, user := range userMap {
+		users = append(users, map[string]interface{}{
+			"id":       id,
+			"username": user.Username,
+			"email":    user.Email,
+		})
+	}
+
+	// Calculate expense trends
+	var dailyTrends []map[string]interface{}
+	for date, stats := range dailyStats {
+		dailyTrends = append(dailyTrends, map[string]interface{}{
+			"date":          date,
+			"total":         stats.Total,
+			"count":         stats.Count,
+			"max_amount":    stats.MaxAmount,
+			"avg_amount":    stats.Total / float64(stats.Count),
+		})
+	}
+
+	// Sort daily trends by date
+	sort.Slice(dailyTrends, func(i, j int) bool {
+		return dailyTrends[i]["date"].(string) < dailyTrends[j]["date"].(string)
+	})
+
+	// Prepare response
 	response := map[string]interface{}{
-		"total_expenses": totalExpense,
-		"user_expenses":  user_expense,
-		"user_balances":      balances,
+		"total_expenses":        totalExpense,
+		"transaction_count":     transactionCount,
+		"average_transaction":   avgTransactionAmount,
+		"largest_transaction":   maxTransactionAmount,
+		"active_users":         activeUserCount,
+		"category_expenses":     categoryExpenses,
+		"user_expenses":        userExpenses,
+		"user_balances":        userBalances,
+		"daily_trends":         dailyTrends,
+		"users":                users,
+		"period": map[string]string{
+			"start_date": startDate,
+			"end_date":   endDate,
+		},
 	}
+
+	// Send response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func EditTransaction(w http.ResponseWriter, r *http.Request) {
