@@ -15,6 +15,9 @@ import {
   Calendar,
   PieChart,
   Share2,
+  ChevronDown,
+  Menu,
+  Bell,
 } from "lucide-react";
 import {
   LineChart,
@@ -37,7 +40,7 @@ const GlassCard = ({ children, className = "", ...props }) => (
   </motion.div>
 );
 
-function SummaryTab() {
+function SummaryTab({ currentUser }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [monthlyData, setMonthlyData] = useState({
     currentMonth: null,
@@ -46,6 +49,7 @@ function SummaryTab() {
     error: null
   });
   const [trendData, setTrendData] = useState([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fetchMonthlyData = async () => {
     try {
@@ -82,7 +86,7 @@ function SummaryTab() {
         currentMonth: {
           ...currentMonthData,
           avg_per_member: currentMonthData.total_expenses / Object.keys(currentMonthData.user_expenses || {}).length,
-          transaction_velocity: currentMonthData.transaction_count / 30, // transactions per day
+          transaction_velocity: currentMonthData.transaction_count / 30,
           largest_transaction: Math.max(...Object.values(currentMonthData.user_expenses || {})),
           settlement_efficiency: calculateSettlementEfficiency(currentMonthData.user_balances)
         },
@@ -99,16 +103,16 @@ function SummaryTab() {
     }
   };
 
+  useEffect(() => {
+    fetchMonthlyData();
+  }, []);
+
   const calculateSettlementEfficiency = (balances) => {
     if (!balances) return 0;
     const totalAbsBalance = Object.values(balances).reduce((sum, balance) => sum + Math.abs(balance), 0);
     const totalPositiveBalance = Object.values(balances).reduce((sum, balance) => sum + Math.max(0, balance), 0);
     return (totalPositiveBalance > 0) ? (totalAbsBalance / (2 * totalPositiveBalance)) : 1;
   };
-
-  useEffect(() => {
-    fetchMonthlyData();
-  }, []);
 
   const calculateChange = (current, previous) => {
     if (!previous) return { percentage: 0, trend: 'neutral' };
@@ -134,9 +138,14 @@ function SummaryTab() {
     );
   };
 
+  const getCurrentUserBalance = () => {
+    if (!monthlyData.currentMonth?.user_balances || !currentUser?.id) return 0;
+    return monthlyData.currentMonth.user_balances[currentUser.id] || 0;
+  };
+
   if (monthlyData.loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-4 md:p-8 flex items-center justify-center">
         <div className="text-gray-500">Loading dashboard data...</div>
       </div>
     );
@@ -144,7 +153,7 @@ function SummaryTab() {
 
   if (monthlyData.error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-4 md:p-8 flex items-center justify-center">
         <div className="text-red-600">Error: {monthlyData.error}</div>
       </div>
     );
@@ -153,235 +162,245 @@ function SummaryTab() {
   const { currentMonth, previousMonth } = monthlyData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-medium text-gray-900 tracking-tight">
-            Expenses Dashboard
-          </h1>
-          <p className="text-lg text-gray-500 mt-2 tracking-wide">
-            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200">
+      {/* Header */}
+      <div className="bg-white/70 backdrop-blur-xl border-b border-gray-200/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <button
+                className="md:hidden p-2 rounded-md text-gray-600"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <Menu size={24} />
+              </button>
+              <h1 className="text-xl font-medium text-gray-900 ml-2 md:ml-0">
+                Finance Dashboard
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <button className="p-2 rounded-full hover:bg-gray-100">
+                <Bell size={20} className="text-gray-600" />
+              </button>
+              <div className="hidden md:flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  {currentUser?.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900 truncate max-w-[150px]">
+                    {currentUser?.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-medium text-gray-900">
+            Welcome back, {currentUser?.email?.split('@')[0]}!
+          </h2>
+          <p className="text-gray-500 mt-1">
+            Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Wallet className="text-blue-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Balance</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  ₹{Object.values(currentMonth.user_balances || {})
-                      .reduce((sum, balance) => sum + Math.max(0, balance), 0)
-                      .toFixed(2)}
-                </p>
-              </div>
+        {/* Personal Stats */}
+        <GlassCard className="mb-8 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Your Summary</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white/50 rounded-2xl p-4">
+              <p className="text-sm text-gray-500">Your Balance</p>
+              <p className={`text-2xl font-medium ${getCurrentUserBalance() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ₹{Math.abs(getCurrentUserBalance()).toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {getCurrentUserBalance() >= 0 ? 'You are owed' : 'You owe'}
+              </p>
             </div>
-          </GlassCard>
-
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Activity className="text-green-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Transaction Velocity</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  {currentMonth.transaction_velocity.toFixed(1)}/day
-                </p>
-              </div>
+            
+            <div className="bg-white/50 rounded-2xl p-4">
+              <p className="text-sm text-gray-500">Your Expenses</p>
+              <p className="text-2xl font-medium text-gray-900">
+                ₹{(currentMonth.user_expenses?.[currentUser?.id] || 0).toFixed(2)}
+              </p>
+              <TrendIndicator 
+                current={currentMonth.user_expenses?.[currentUser?.id] || 0}
+                previous={previousMonth.user_expenses?.[currentUser?.id] || 0}
+                reverseColors
+              />
             </div>
-          </GlassCard>
 
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-xl">
-                <Share2 className="text-purple-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Settlement Efficiency</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  {(currentMonth.settlement_efficiency * 100).toFixed(1)}%
-                </p>
-              </div>
+            <div className="bg-white/50 rounded-2xl p-4">
+              <p className="text-sm text-gray-500">Group Share</p>
+              <p className="text-2xl font-medium text-gray-900">
+                {((currentMonth.user_expenses?.[currentUser?.id] || 0) / currentMonth.total_expenses * 100).toFixed(1)}%
+              </p>
+              <p className="text-sm text-gray-500 mt-1">of total expenses</p>
             </div>
-          </GlassCard>
 
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <Users className="text-orange-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Avg Per Member</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  ₹{currentMonth.avg_per_member.toFixed(2)}
-                </p>
-              </div>
+            <div className="bg-white/50 rounded-2xl p-4">
+              <p className="text-sm text-gray-500">Settlement Status</p>
+              <p className="text-2xl font-medium text-gray-900">
+                {getCurrentUserBalance() === 0 ? 'Settled' : 'Pending'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {Object.keys(currentMonth.user_balances || {}).length} active members
+              </p>
             </div>
-          </GlassCard>
-        </div>
+          </div>
+        </GlassCard>
 
-        {/* Expense Trend Chart */}
-        <GlassCard className="mb-8 p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Expense Trend</h2>
+        {/* Expense Trend */}
+        <GlassCard className="mb-8 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Expense Trend</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="amount" stroke="#6366f1" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#6B7280"
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke="#6B7280"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `₹${value}`}
+                />
+                <Tooltip 
+                  formatter={(value) => [`₹${value}`, 'Amount']}
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    padding: '8px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="#6366F1" 
+                  strokeWidth={2}
+                  dot={{ fill: '#6366F1', strokeWidth: 2 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </GlassCard>
 
-        {/* Monthly Overview */}
-        <GlassCard className="mb-8 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-medium text-gray-900 tracking-tight">Monthly Overview</h2>
-            <div className="px-4 py-2 bg-gray-500/5 rounded-2xl text-sm text-gray-500">
-              vs Previous Month
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Total Expenses</p>
-                <TrendIndicator 
-                  current={currentMonth.total_expenses} 
-                  previous={previousMonth.total_expenses}
-                  reverseColors
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                ₹{currentMonth.total_expenses.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Largest Transaction</p>
-                <TrendIndicator 
-                  current={currentMonth.largest_transaction} 
-                  previous={Math.max(...Object.values(previousMonth.user_expenses || {}))}
-                  reverseColors
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                ₹{currentMonth.largest_transaction.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Active Members</p>
-                <TrendIndicator 
-                  current={Object.keys(currentMonth.user_expenses || {}).length} 
-                  previous={Object.keys(previousMonth.user_expenses || {}).length}
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                {Object.keys(currentMonth.user_expenses || {}).length}
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Settlement Status */}
-        <GlassCard className="mb-8 p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Settlement Status</h2>
+        {/* Group Balances */}
+        <GlassCard className="p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Group Balances</h3>
           <div className="space-y-4">
             {Object.entries(currentMonth.user_balances || {}).map(([userId, balance]) => {
               const user = currentMonth.users?.find(u => u.id === userId);
-              const isPositive = balance >= 0;
+              if (!user) return null;
               
               return (
-                <div key={userId} className="p-4 bg-gray-500/5 rounded-2xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-900 font-medium">{user?.username || 'Unknown User'}</p>
-                      <p className="text-sm text-gray-500">{user?.email}</p>
-                    </div>
-                    <div className={`text-xl font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                      {isPositive ? '+ ' : '- '}₹{Math.abs(balance).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </GlassCard>
-
-	          {/* Category Trends */}
-        <GlassCard className="mb-8 p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Category Trends</h2>
-          <div className="space-y-4">
-            {Object.entries(currentMonth.category_expenses || {}).map(([category, amount]) => {
-              const prevAmount = previousMonth.category_expenses?.[category] || 0;
-              const { percentage, trend } = calculateChange(amount, prevAmount);
-
-              return (
-                <div key={category} className="p-4 bg-gray-500/5 rounded-2xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-gray-900 font-medium capitalize">{category}</p>
-                    <TrendIndicator current={amount} previous={prevAmount} reverseColors />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-2xl font-medium text-gray-900 tracking-tight">
-                      ₹{amount.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Previous: ₹{prevAmount.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </GlassCard>
-
-        {/* Top Spenders */}
-        <GlassCard className="p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Top Spenders</h2>
-          <div className="space-y-4">
-            {Object.entries(currentMonth.user_expenses || {})
-              .sort(([, a], [, b]) => b - a)
-              .slice(0, 5)
-              .map(([userId, amount]) => {
-                const prevAmount = previousMonth.user_expenses?.[userId] || 0;
-                const user = currentMonth.users?.find(u => u.id === userId);
-
-                return (
-                  <div key={userId} className="p-4 bg-gray-500/5 rounded-2xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="text-gray-900 font-medium">{user?.username || 'Unknown User'}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
+                <div key={userId} className="bg-white/50 rounded-2xl p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        {user.email?.charAt(0).toUpperCase()}
                       </div>
-                      <TrendIndicator current={amount} previous={prevAmount} reverseColors />
+                      <div>
+                        <p className="font-medium text-gray-900">{user.email?.split('@')[0]}</p>
+                        <p className="text-sm text-gray-500 truncate max-w-[200px]">{user.email}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <p className="text-2xl font-medium text-gray-900 tracking-tight">
-                        ₹{amount.toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Previous: ₹{prevAmount.toFixed(2)}
-                      </p>
+                    <div className={`text-lg font-medium ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {balance >= 0 ? '+' : '-'} ₹{Math.abs(balance).toFixed(2)}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </div>
         </GlassCard>
       </div>
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50 md:hidden"
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Menu</h3>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+                  <Activity size={20} className="text-gray-600" />
+                  <span className="text-gray-900">Dashboard</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+                  <Wallet size={20} className="text-gray-600" />
+                  <span className="text-gray-900">Expenses</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+                  <Clock size={20} className="text-gray-600" />
+                  <span className="text-gray-900">History</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+                  <Users size={20} className="text-gray-600" />
+                  <span className="text-gray-900">Members</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100">
+                  <Share2 size={20} className="text-gray-600" />
+                  <span className="text-gray-900">Share</span>
+                </div>
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    {currentUser?.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 truncate">
+                      {currentUser?.email?.split('@')[0]}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {currentUser?.email}
+                    </p>
+                  </div>
+                  <button className="p-2 rounded-full hover:bg-gray-100">
+                    <ChevronDown size={20} className="text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
