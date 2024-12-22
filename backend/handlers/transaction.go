@@ -327,18 +327,6 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 			AND ($1 = '' OR created_at >= $1::timestamp)
 			AND ($2 = '' OR created_at <= $2::timestamp)
 			GROUP BY DATE(created_at)
-		),
-		category_expenses AS (
-			SELECT
-				category,
-				SUM(amount) as total_amount,
-				COUNT(*) as transaction_count
-			FROM transactions t
-			JOIN transaction_categories tc ON t.id = tc.transaction_id
-			WHERE t.is_deleted = false
-			AND ($1 = '' OR t.created_at >= $1::timestamp)
-			AND ($2 = '' OR t.created_at <= $2::timestamp)
-			GROUP BY category
 		)
 		SELECT
 			t.id,
@@ -349,11 +337,9 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 			t.remark,
 			t.is_deleted,
 			t.deleted_at,
-			tc.category,
 			u.username,
 			u.email
 		FROM transactions t
-		LEFT JOIN transaction_categories tc ON t.id = tc.transaction_id
 		LEFT JOIN users u ON t.payer_id = u.id
 		WHERE t.is_deleted = false
 		AND ($1 = '' OR t.created_at >= $1::timestamp)
@@ -371,7 +357,6 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 	// Data structures for aggregation
 	type TransactionWithMeta struct {
 		Transaction
-		Category string `json:"category"`
 		Username string `json:"username"`
 		Email    string `json:"email"`
 	}
@@ -394,7 +379,6 @@ func GenerateSummary(w http.ResponseWriter, r *http.Request) {
 			&t.Remark,
 			&t.IsDeleted,
 			&t.DeletedAt,
-			&t.Category,
 			&t.Username,
 			&t.Email,
 		)
