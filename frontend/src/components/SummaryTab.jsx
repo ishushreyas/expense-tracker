@@ -23,10 +23,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsDonut,
-  Pie,
-  Cell,
+  ResponsiveContainer
 } from 'recharts';
 
 const GlassCard = ({ children, className = "", ...props }) => (
@@ -122,31 +119,6 @@ function SummaryTab() {
     };
   };
   
-  const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
-
-  const prepareSettlementData = (userBalances) => {
-    if (!userBalances) return [];
-    return Object.entries(userBalances)
-      .filter(([_, balance]) => balance > 0)
-      .map(([userId, balance], index) => ({
-        name: `User ${index + 1}`,
-        value: balance,
-      }));
-  };
-
-  const CustomDonutLabel = ({ cx, cy, viewBox }) => {
-    const total = monthlyData.currentMonth?.total_expenses || 0;
-    return (
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-        <tspan x={cx} dy="-0.5em" className="text-xl font-medium fill-gray-900">
-          ₹{total.toFixed(0)}
-        </tspan>
-        <tspan x={cx} dy="1.5em" className="text-sm fill-gray-500">
-          Total
-        </tspan>
-      </text>
-    );
-  };
 
   const TrendIndicator = ({ current, previous, reverseColors = false }) => {
     const { percentage, trend } = calculateChange(current, previous);
@@ -180,6 +152,51 @@ function SummaryTab() {
   }
 
   const { currentMonth, previousMonth } = monthlyData;
+  
+  const COLORS = ['#007AFF', '#34C759', '#5856D6', '#FF2D55', '#FF9500'];
+
+  const prepareTopSpendersData = (userExpenses, users) => {
+    if (!userExpenses) return [];
+    return Object.entries(userExpenses)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([userId, amount], index) => {
+        const user = users?.find(u => u.id === userId);
+        return {
+          name: user?.username || `User ${index + 1}`,
+          value: amount,
+          email: user?.email
+        };
+      });
+  };
+
+  const CustomDonutLabel = ({ cx, cy, viewBox }) => {
+    const total = monthlyData.currentMonth?.total_expenses || 0;
+    return (
+      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
+        <tspan x={cx} dy="-0.5em" className="text-xl font-medium fill-gray-900">
+          ₹{total.toFixed(0)}
+        </tspan>
+        <tspan x={cx} dy="1.5em" className="text-sm fill-gray-500">
+          Total Spent
+        </tspan>
+      </text>
+    );
+  };
+
+  // ... [Previous fetch and calculation functions remain the same]
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/90 backdrop-blur-lg p-4 rounded-xl shadow-lg border border-gray-100">
+          <p className="font-medium text-gray-900">{payload[0].name}</p>
+          <p className="text-gray-600">₹{payload[0].value.toFixed(2)}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8">
@@ -256,29 +273,14 @@ function SummaryTab() {
         </div>
 
         {/* Expense Trend Chart */}
-        <GlassCard className="mb-8 p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Expense Trend</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="amount" stroke="#6366f1" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-        
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <GlassCard className="p-8">
-            <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Settlement Share</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
+          <GlassCard className="p-4 md:p-8">
+            <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Top Spenders</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsDonut>
                   <Pie
-                    data={prepareSettlementData(monthlyData.currentMonth?.user_balances)}
+                    data={prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -287,33 +289,38 @@ function SummaryTab() {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {prepareSettlementData(monthlyData.currentMonth?.user_balances).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)
+                      .map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                 </RechartsDonut>
               </ResponsiveContainer>
             </div>
             <div className="mt-4 space-y-2">
-              {prepareSettlementData(monthlyData.currentMonth?.user_balances).map((entry, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm text-gray-600">{entry.name}</span>
+              {prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)
+                .map((entry, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-900">{entry.name}</span>
+                        <span className="text-xs text-gray-500">{entry.email}</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      ₹{entry.value.toFixed(2)}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    ₹{entry.value.toFixed(2)}
-                  </span>
-                </div>
               ))}
             </div>
           </GlassCard>
 
-          <GlassCard className="p-8">
+          <GlassCard className="p-4 md:p-8">
             <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Expense Trend</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -339,10 +346,10 @@ function SummaryTab() {
                   <Line 
                     type="monotone" 
                     dataKey="amount" 
-                    stroke="#6366f1"
+                    stroke="#007AFF"
                     strokeWidth={2}
-                    dot={{ fill: '#6366f1', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#6366f1' }}
+                    dot={{ fill: '#007AFF', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#007AFF' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -403,17 +410,16 @@ function SummaryTab() {
           </div>
         </GlassCard>
 
-        {/* Settlement Status */}
-        <GlassCard className="mb-8 p-8">
+        {/* Settlement Status */}        <GlassCard className="p-4 md:p-8 mb-8">
           <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Settlement Status</h2>
-          <div className="space-y-4">
-            {Object.entries(currentMonth.user_balances || {}).map(([userId, balance]) => {
-              const user = currentMonth.users?.find(u => u.id === userId);
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(monthlyData.currentMonth?.user_balances || {}).map(([userId, balance]) => {
+              const user = monthlyData.currentMonth?.users?.find(u => u.id === userId);
               const isPositive = balance >= 0;
               
               return (
                 <div key={userId} className="p-4 bg-gray-500/5 rounded-2xl">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
                       <p className="text-gray-900 font-medium">{user?.username || 'Unknown User'}</p>
                       <p className="text-sm text-gray-500">{user?.email}</p>
@@ -427,6 +433,7 @@ function SummaryTab() {
             })}
           </div>
         </GlassCard>
+
 
 	          {/* Category Trends */}
         <GlassCard className="mb-8 p-8">
