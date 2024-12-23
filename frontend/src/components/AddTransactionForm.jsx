@@ -8,8 +8,8 @@ const AddTransactionForm = ({
   setNewTransaction,
   handleAddTransaction,
   error,
-  selectedTransaction, // The transaction selected for editing
-  setSelectedTransaction, // Function to clear the selected transaction
+  selectedTransaction,
+  setSelectedTransaction, 
 }) => {
   // Pre-fill form with selected transaction details
   useEffect(() => {

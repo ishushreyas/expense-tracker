@@ -372,7 +372,7 @@ const handleDeletePayment = async (paymentId) => {
           users={users}
         />
       )}
-      {activeTab === "payments" && <Payments users={users} currentUser={users[1]} />}
+      {activeTab === "payments" && <Payments users={users} currentUser={currentUser} />}
     </div>
     {loading && (
       <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
