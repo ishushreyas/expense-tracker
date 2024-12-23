@@ -36,7 +36,8 @@ const AddTransactionForm = ({
 
   return (
     <form
-      onSubmit={handleAddTransaction}
+      onSubmit={(e) => { e.preventDefault();
+	      handleAddTransaction();}}
       className="mt-6 bg-gray-50 p-4 rounded-lg shadow-md"
     >
       <div className="space-y-4">
@@ -126,7 +127,6 @@ const AddTransactionForm = ({
         <button
           type="submit"
           className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition"
-            onClick={handleAddTransaction}
         >
           {selectedTransaction ? "Update Transaction" : "Add Transaction"}
         </button>

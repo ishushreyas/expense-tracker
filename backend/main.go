@@ -159,6 +159,7 @@ func main() {
 	r.HandleFunc("/transactions", handlers.GetTransactions).Methods("GET")
 	r.HandleFunc("/transactions/{id}", handlers.GetTransactionByID).Methods("GET")
 	r.HandleFunc("/transactions", verifySessionMiddleware(client, handlers.AddTransaction)).Methods("POST")
+	r.HandleFunc("/transactions/{id}", verifySessionMiddleware(client, handlers.EditTransaction)).Methods("PUT")
 	r.HandleFunc("/transactions/{id}", handlers.DeleteTransaction).Methods("DELETE")
 	r.HandleFunc("/transactions/{id}/soft-delete", handlers.SoftDeleteTransaction).Methods("DELETE")
 	r.HandleFunc("/summary", handlers.GenerateSummary).Methods("GET")
