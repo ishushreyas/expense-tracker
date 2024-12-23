@@ -23,7 +23,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart as RechartsDonut,
+  Pie,
+  Cell,
 } from 'recharts';
 
 const GlassCard = ({ children, className = "", ...props }) => (
