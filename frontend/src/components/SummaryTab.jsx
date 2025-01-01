@@ -1,20 +1,18 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CircleDollarSign,
+  Wallet,
+  Activity,
+  Share2,
+  Users,
   TrendingUp,
   TrendingDown,
-  Users,
-  ReceiptText,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  AlertCircle,
   ArrowUpRight,
-  ArrowDownRight,
-  X,
-  Activity,
-  Wallet,
-  Clock,
-  Calendar,
-  PieChart,
-  Share2,
+  ArrowDownRight
 } from "lucide-react";
 import {
   LineChart,
@@ -27,11 +25,14 @@ import {
   PieChart as RechartsDonut,
   Pie,
   Cell,
+  Area,
+  AreaChart,
 } from 'recharts';
 
+// Styled components
 const GlassCard = ({ children, className = "", ...props }) => (
   <motion.div
-    className={`backdrop-blur-xl bg-white/80 rounded-3xl border border-white/20 shadow-lg ${className}`}
+    className={`backdrop-blur-xl bg-white/90 rounded-3xl border border-white/20 shadow-lg ${className}`}
     whileHover={{ scale: 1.01 }}
     transition={{ type: "spring", stiffness: 300, damping: 20 }}
     {...props}
@@ -40,67 +41,156 @@ const GlassCard = ({ children, className = "", ...props }) => (
   </motion.div>
 );
 
+const Badge = ({ children, variant = "default" }) => {
+  const variants = {
+    default: "bg-gray-100 text-gray-800",
+    success: "bg-green-100 text-green-800",
+    warning: "bg-yellow-100 text-yellow-800",
+    error: "bg-red-100 text-red-800",
+  };
+
+  return (
+    <span className={`px-3 py-1 rounded-full text-sm font-medium ${variants[variant]}`}>
+      {children}
+    </span>
+  );
+};
+
+const Stat = ({ label, value, icon: Icon, trend, trendValue }) => (
+  <div className="p-6 rounded-2xl bg-white/50">
+    <div className="flex items-start justify-between mb-4">
+      <div className="p-3 bg-blue-50 rounded-xl">
+        <Icon className="text-blue-600" size={24} />
+      </div>
+      {trend && (
+        <div className={`flex items-center gap-1 ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+          {trend === 'up' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+          <span className="text-sm font-medium">{trendValue}%</span>
+        </div>
+      )}
+    </div>
+    <p className="text-sm text-gray-500 mb-1">{label}</p>
+    <p className="text-2xl font-semibold text-gray-900">{value}</p>
+  </div>
+);
+
+const MonthNavigator = ({ currentDate, onNavigate }) => {
+  const isCurrentMonth = (date) => {
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-4 mb-8">
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => onNavigate('prev')}
+        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+      >
+        <ChevronLeft className="text-gray-600" />
+      </motion.button>
+      <h2 className="text-2xl font-medium text-gray-900">
+        {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+      </h2>
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => onNavigate('next')}
+        disabled={isCurrentMonth(currentDate)}
+        className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+      >
+        <ChevronRight className="text-gray-600" />
+      </motion.button>
+    </div>
+  );
+};
+
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
+
+const ErrorState = ({ message }) => (
+  <div className="flex flex-col items-center justify-center h-screen">
+    <AlertCircle className="text-red-500 w-16 h-16 mb-4" />
+    <h2 className="text-xl font-medium text-gray-900 mb-2">Something went wrong</h2>
+    <p className="text-gray-500">{message}</p>
+  </div>
+);
+
 function SummaryTab() {
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [monthlyData, setMonthlyData] = useState({
-    currentMonth: null,
-    previousMonth: null,
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [summaryData, setSummaryData] = useState({
+    current: null,
+    previous: null,
     loading: true,
     error: null
   });
-  const [trendData, setTrendData] = useState([]);
 
-  const fetchMonthlyData = async () => {
+  const handleMonthNavigation = (direction) => {
+    setSelectedDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else if (direction === 'next') {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const fetchMonthData = async (date) => {
     try {
-      const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      setSummaryData(prev => ({ ...prev, loading: true }));
+      
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const prevMonthStart = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(date.getFullYear(), date.getMonth(), 0);
 
       const formatDate = (date) => date.toISOString().split('T')[0];
 
-      const currentMonthResponse = await fetch(
-        `/api/summary?start_date=${formatDate(currentMonthStart)}&end_date=${formatDate(currentMonthEnd)}`
-      );
-      const currentMonthData = await currentMonthResponse.json();
+      const [currentResponse, previousResponse] = await Promise.all([
+        fetch(`/api/summary?start_date=${formatDate(monthStart)}&end_date=${formatDate(monthEnd)}`),
+        fetch(`/api/summary?start_date=${formatDate(prevMonthStart)}&end_date=${formatDate(prevMonthEnd)}`)
+      ]);
 
-      const prevMonthResponse = await fetch(
-        `/api/summary?start_date=${formatDate(prevMonthStart)}&end_date=${formatDate(prevMonthEnd)}`
-      );
-      const prevMonthData = await prevMonthResponse.json();
+      if (!currentResponse.ok || !previousResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
 
-      // Generate trend data for the last 7 days
-      const last7Days = [...Array(7)].map((_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        return {
-          date: formatDate(date),
-          amount: Math.random() * currentMonthData.total_expenses / 7 // Simulated data
-        };
-      }).reverse();
+      const [currentData, previousData] = await Promise.all([
+        currentResponse.json(),
+        previousResponse.json()
+      ]);
 
-      setTrendData(last7Days);
-      setMonthlyData({
-        currentMonth: {
-          ...currentMonthData,
-          avg_per_member: currentMonthData.total_expenses / Object.keys(currentMonthData.user_expenses || {}).length,
-          transaction_velocity: currentMonthData.transaction_count / 30, // transactions per day
-          largest_transaction: Math.max(...Object.values(currentMonthData.user_expenses || {})),
-          settlement_efficiency: calculateSettlementEfficiency(currentMonthData.user_balances)
+      const processedData = {
+        current: {
+          ...currentData,
+          avg_per_member: currentData.total_expenses / Object.keys(currentData.user_expenses || {}).length,
+          transaction_velocity: currentData.transaction_count / new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(),
+          settlement_efficiency: calculateSettlementEfficiency(currentData.user_balances)
         },
-        previousMonth: prevMonthData,
+        previous: previousData,
         loading: false,
         error: null
-      });
+      };
+
+      setSummaryData(processedData);
     } catch (err) {
-      setMonthlyData(prev => ({
+      setSummaryData(prev => ({
         ...prev,
         loading: false,
         error: err.message
       }));
     }
   };
+
+  useEffect(() => {
+    fetchMonthData(selectedDate);
+  }, [selectedDate]);
 
   const calculateSettlementEfficiency = (balances) => {
     if (!balances) return 0;
@@ -109,394 +199,273 @@ function SummaryTab() {
     return (totalPositiveBalance > 0) ? (totalAbsBalance / (2 * totalPositiveBalance)) : 1;
   };
 
-  useEffect(() => {
-    fetchMonthlyData();
-  }, []);
-
-  const calculateChange = (current, previous) => {
-    if (!previous) return { percentage: 0, trend: 'neutral' };
+  const calculateTrend = (current, previous) => {
+    if (!previous) return { trend: 'neutral', value: 0 };
     const change = ((current - previous) / previous) * 100;
     return {
-      percentage: Math.abs(change).toFixed(1),
-      trend: change >= 0 ? 'up' : 'down'
+      trend: change >= 0 ? 'up' : 'down',
+      value: Math.abs(change).toFixed(1)
     };
   };
-  
 
-  const TrendIndicator = ({ current, previous, reverseColors = false }) => {
-    const { percentage, trend } = calculateChange(current, previous);
-    const isPositive = trend === 'up';
-    const colorClass = reverseColors
-      ? isPositive ? 'text-red-600' : 'text-green-600'
-      : isPositive ? 'text-green-600' : 'text-red-600';
-
-    return (
-      <div className={`flex items-center gap-1 ${colorClass}`}>
-        {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-        <span className="text-sm font-medium">{percentage}%</span>
-      </div>
-    );
-  };
-
-  if (monthlyData.loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8 flex items-center justify-center">
-        <div className="text-gray-500">Loading dashboard data...</div>
-      </div>
-    );
+  if (summaryData.loading) {
+    return <LoadingSpinner />;
   }
 
-  if (monthlyData.error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8 flex items-center justify-center">
-        <div className="text-red-600">Error: {monthlyData.error}</div>
-      </div>
-    );
+  if (summaryData.error) {
+    return <ErrorState message={summaryData.error} />;
   }
 
-  const { currentMonth, previousMonth } = monthlyData;
-  
+  const { current, previous } = summaryData;
   const COLORS = ['#007AFF', '#34C759', '#5856D6', '#FF2D55', '#FF9500'];
-
-  const prepareTopSpendersData = (userExpenses, users) => {
-    if (!userExpenses) return [];
-    return Object.entries(userExpenses)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([userId, amount], index) => {
-        const user = users?.find(u => u.id === userId);
-        return {
-          name: user?.username || `User ${index + 1}`,
-          value: amount,
-          email: user?.email
-        };
-      });
-  };
-
-  const CustomDonutLabel = ({ cx, cy, viewBox }) => {
-    const total = monthlyData.currentMonth?.total_expenses || 0;
-    return (
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-        <tspan x={cx} dy="-0.5em" className="text-xl font-medium fill-gray-900">
-          ₹{total.toFixed(0)}
-        </tspan>
-        <tspan x={cx} dy="1.5em" className="text-sm fill-gray-500">
-          Total Spent
-        </tspan>
-      </text>
-    );
-  };
-
-  // ... [Previous fetch and calculation functions remain the same]
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white/90 backdrop-blur-lg p-4 rounded-xl shadow-lg border border-gray-100">
-          <p className="font-medium text-gray-900">{payload[0].name}</p>
-          <p className="text-gray-600">₹{payload[0].value.toFixed(2)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-medium text-gray-900 tracking-tight">
-            Expenses Dashboard
+          <h1 className="text-5xl font-semibold text-gray-900 tracking-tight mb-4">
+            Financial Overview
           </h1>
-          <p className="text-lg text-gray-500 mt-2 tracking-wide">
-            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </p>
+          <MonthNavigator
+            currentDate={selectedDate}
+            onNavigate={handleMonthNavigation}
+          />
         </div>
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Wallet className="text-blue-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Balance</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  ₹{Object.values(currentMonth.user_balances || {})
-                      .reduce((sum, balance) => sum + Math.max(0, balance), 0)
-                      .toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Activity className="text-green-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Transaction Velocity</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  {currentMonth.transaction_velocity.toFixed(1)}/day
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-xl">
-                <Share2 className="text-purple-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Settlement Efficiency</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  {(currentMonth.settlement_efficiency * 100).toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <Users className="text-orange-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Avg Per Member</p>
-                <p className="text-2xl font-medium text-gray-900">
-                  ₹{currentMonth.avg_per_member.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </GlassCard>
+          <Stat
+            label="Total Expenses"
+            value={`₹${current.total_expenses.toFixed(2)}`}
+            icon={Wallet}
+            {...calculateTrend(current.total_expenses, previous.total_expenses)}
+          />
+          <Stat
+            label="Active Members"
+            value={Object.keys(current.user_expenses || {}).length}
+            icon={Users}
+            {...calculateTrend(
+              Object.keys(current.user_expenses || {}).length,
+              Object.keys(previous.user_expenses || {}).length
+            )}
+          />
+          <Stat
+            label="Transaction Velocity"
+            value={`${current.transaction_velocity.toFixed(1)}/day`}
+            icon={Activity}
+            {...calculateTrend(current.transaction_velocity, previous.transaction_count / 30)}
+          />
+          <Stat
+            label="Settlement Efficiency"
+            value={`${(current.settlement_efficiency * 100).toFixed(1)}%`}
+            icon={Share2}
+            {...calculateTrend(current.settlement_efficiency, calculateSettlementEfficiency(previous.user_balances))}
+          />
         </div>
 
-        {/* Expense Trend Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
-          <GlassCard className="p-4 md:p-8">
-            <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Top Spenders</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <GlassCard className="p-6">
+            <h3 className="text-xl font-medium text-gray-900 mb-6">Expense Trend</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsDonut>
-                  <Pie
-                    data={prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)
-                      .map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </RechartsDonut>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 space-y-2">
-              {prepareTopSpendersData(monthlyData.currentMonth?.user_expenses, monthlyData.currentMonth?.users)
-                .map((entry, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900">{entry.name}</span>
-                        <span className="text-xs text-gray-500">{entry.email}</span>
-                      </div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      ₹{entry.value.toFixed(2)}
-                    </span>
-                  </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-4 md:p-8">
-            <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Expense Trend</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#666"
-                    tick={{ fill: '#666' }}
-                  />
-                  <YAxis 
-                    stroke="#666"
-                    tick={{ fill: '#666' }}
-                  />
-                  <Tooltip 
+                <AreaChart data={current.daily_trends}>
+                  <defs>
+                    <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#007AFF" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#007AFF" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+                  <XAxis dataKey="date" stroke="#666" />
+                  <YAxis stroke="#666" />
+                  <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       border: 'none',
                       borderRadius: '12px',
                       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="amount" 
+                  <Area
+                    type="monotone"
+                    dataKey="total"
                     stroke="#007AFF"
-                    strokeWidth={2}
-                    dot={{ fill: '#007AFF', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#007AFF' }}
+                    fillOpacity={1}
+                    fill="url(#colorExpense)"
                   />
-                </LineChart>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6">
+            <h3 className="text-xl font-medium text-gray-900 mb-6">Top Spenders</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsDonut>
+                  <Pie
+                    data={Object.entries(current.user_expenses || {})
+                      .map(([id, amount]) => ({
+                        name: current.users?.find(u => u.id === id)?.username || 'Unknown',
+                        value: amount
+                      }))
+                      .sort((a, b) => b.value - a.value)
+                      .slice(0, 5)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {COLORS.map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </RechartsDonut>
               </ResponsiveContainer>
             </div>
           </GlassCard>
         </div>
 
-        {/* Monthly Overview */}
-        <GlassCard className="mb-8 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-medium text-gray-900 tracking-tight">Monthly Overview</h2>
-            <div className="px-4 py-2 bg-gray-500/5 rounded-2xl text-sm text-gray-500">
-              vs Previous Month
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Total Expenses</p>
-                <TrendIndicator 
-                  current={currentMonth.total_expenses} 
-                  previous={previousMonth.total_expenses}
-                  reverseColors
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                ₹{currentMonth.total_expenses.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Largest Transaction</p>
-                <TrendIndicator 
-                  current={currentMonth.largest_transaction} 
-                  previous={Math.max(...Object.values(previousMonth.user_expenses || {}))}
-                  reverseColors
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                ₹{currentMonth.largest_transaction.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="p-6 bg-gray-500/5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-500">Active Members</p>
-                <TrendIndicator 
-                  current={Object.keys(currentMonth.user_expenses || {}).length} 
-                  previous={Object.keys(previousMonth.user_expenses || {}).length}
-                />
-              </div>
-              <p className="text-3xl font-medium text-gray-900 tracking-tight">
-                {Object.keys(currentMonth.user_expenses || {}).length}
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Settlement Status */}        <GlassCard className="p-4 md:p-8 mb-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Settlement Status</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(monthlyData.currentMonth?.user_balances || {}).map(([userId, balance]) => {
-              const user = monthlyData.currentMonth?.users?.find(u => u.id === userId);
+        <GlassCard className="p-6 mb-8">
+          <h3 className="text-xl font-medium text-gray-900 mb-6">Settlement Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(current.user_balances || {}).map(([userId, balance]) => {
+              const user = current.users?.find(u => u.id === userId);
               const isPositive = balance >= 0;
               
               return (
-                <div key={userId} className="p-4 bg-gray-500/5 rounded-2xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div key={userId} className="p-4 bg-white/50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="text-gray-900 font-medium">{user?.username || 'Unknown User'}</p>
+                      <p className="font-medium text-gray-900">{user?.username || 'Unknown'}</p>
                       <p className="text-sm text-gray-500">{user?.email}</p>
                     </div>
-                    <div className={`text-xl font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                      {isPositive ? '+ ' : '- '}₹{Math.abs(balance).toFixed(2)}
-                    </div>
+                    <Badge variant={isPositive ? 'success' : 'error'}>
+                      {isPositive ? 'To Receive' : 'To Pay'}
+                    </Badge>
                   </div>
+                  <p className={`text-xl font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    ₹{Math.abs(balance).toFixed(2)}
+                  </p>
                 </div>
               );
             })}
           </div>
         </GlassCard>
 
-
-	          {/* Category Trends */}
-        <GlassCard className="mb-8 p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Category Trends</h2>
+        <GlassCard className="p-6">
+          <h3 className="text-xl font-medium text-gray-900 mb-6">Recent Transactions
+</h3>
           <div className="space-y-4">
-            {Object.entries(currentMonth.category_expenses || {}).map(([category, amount]) => {
-              const prevAmount = previousMonth.category_expenses?.[category] || 0;
-              const { percentage, trend } = calculateChange(amount, prevAmount);
-
+            {current.transactions?.slice(0, 5).map((transaction) => {
+              const payer = current.users?.find(u => u.id === transaction.payer_id);
+              const memberCount = transaction.members?.length || 0;
+              const shareAmount = transaction.amount / memberCount;
+              
               return (
-                <div key={category} className="p-4 bg-gray-500/5 rounded-2xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-gray-900 font-medium capitalize">{category}</p>
-                    <TrendIndicator current={amount} previous={prevAmount} reverseColors />
+                <motion.div
+                  key={transaction.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-white/50 rounded-xl hover:bg-white/70 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{payer?.username || 'Unknown'}</span>
+                        <span className="text-sm text-gray-500">paid</span>
+                        <span className="font-medium text-gray-900">₹{transaction.amount.toFixed(2)}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">{transaction.remark}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Users size={14} className="text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          Split among {memberCount} {memberCount === 1 ? 'person' : 'people'} 
+                          (₹{shareAmount.toFixed(2)} each)
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(transaction.created_at).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-2xl font-medium text-gray-900 tracking-tight">
-                      ₹{amount.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Previous: ₹{prevAmount.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </GlassCard>
 
-        {/* Top Spenders */}
-        <GlassCard className="p-8">
-          <h2 className="text-2xl font-medium text-gray-900 tracking-tight mb-6">Top Spenders</h2>
-          <div className="space-y-4">
-            {Object.entries(currentMonth.user_expenses || {})
-              .sort(([, a], [, b]) => b - a)
-              .slice(0, 5)
-              .map(([userId, amount]) => {
-                const prevAmount = previousMonth.user_expenses?.[userId] || 0;
-                const user = currentMonth.users?.find(u => u.id === userId);
+          <div className="mt-8">
+            <h3 className="text-xl font-medium text-gray-900 mb-6">Monthly Analytics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Average Transaction Size */}
+              <div className="p-6 bg-white/50 rounded-xl">
+                <div className="flex items-center gap-2 mb-4">
+                  <ArrowUpRight className="text-green-600" size={20} />
+                  <span className="text-sm font-medium text-gray-500">Average Transaction</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">
+                  ₹{(current.total_expenses / current.transaction_count).toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {calculateTrend(
+                    current.total_expenses / current.transaction_count,
+                    previous.total_expenses / previous.transaction_count
+                  ).value}% vs last month
+                </p>
+              </div>
 
-                return (
-                  <div key={userId} className="p-4 bg-gray-500/5 rounded-2xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="text-gray-900 font-medium">{user?.username || 'Unknown User'}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                      </div>
-                      <TrendIndicator current={amount} previous={prevAmount} reverseColors />
-                    </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <p className="text-2xl font-medium text-gray-900 tracking-tight">
-                        ₹{amount.toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Previous: ₹{prevAmount.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Peak Day */}
+              <div className="p-6 bg-white/50 rounded-xl">
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity className="text-blue-600" size={20} />
+                  <span className="text-sm font-medium text-gray-500">Peak Transaction Day</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {current.daily_trends?.reduce((max, day) => 
+                    day.count > (max?.count || 0) ? day : max
+                  )?.date || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Highest activity day this month
+                </p>
+              </div>
+
+              {/* Settlement Health */}
+              <div className="p-6 bg-white/50 rounded-xl">
+                <div className="flex items-center gap-2 mb-4">
+                  <Share2 className="text-purple-600" size={20} />
+                  <span className="text-sm font-medium text-gray-500">Settlement Health</span>
+                </div>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {getSettlementHealth(current.settlement_efficiency)}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Based on current balances
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-8 flex flex-wrap gap-4 justify-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              onClick={() => window.location.href = '/new-transaction'}
+            >
+              Add New Transaction
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              onClick={() => window.location.href = '/settlements'}
+            >
+              View All Settlements
+            </motion.button>
           </div>
         </GlassCard>
       </div>
@@ -504,5 +473,12 @@ function SummaryTab() {
   );
 }
 
-export default SummaryTab;
+// Helper function to determine settlement health status
+const getSettlementHealth = (efficiency) => {
+  if (efficiency >= 0.9) return "Excellent";
+  if (efficiency >= 0.7) return "Good";
+  if (efficiency >= 0.5) return "Fair";
+  return "Needs Attention";
+};
 
+export default SummaryTab;
