@@ -150,8 +150,7 @@ const TransactionList = ({
               users={users} 
               newTransaction={newTransaction} 
               setNewTransaction={setNewTransaction}
-              handl
-eAddTransaction={handleAddTransaction}      
+              handleAddTransaction={handleAddTransaction}      
             />
           </div>
         </div>

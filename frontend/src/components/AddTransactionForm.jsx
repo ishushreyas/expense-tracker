@@ -7,6 +7,7 @@ const AddTransactionForm = ({
   newTransaction,
   setNewTransaction,
   error,
+  handleAddTransaction,
   selectedTransaction,
   setSelectedTransaction, 
 }) => {
@@ -22,39 +23,6 @@ const AddTransactionForm = ({
     }
   }, [selectedTransaction, setNewTransaction]);
   
-  const handleAddTransaction = async (e) => {
-    e.preventDefault();
-    if (!newTransaction.payerId || newTransaction.members.length === 0) {
-      setError("Please select a payer and at least one member.");
-      return;
-    }
-    const amount = parseFloat(newTransaction.amount);
-    if (isNaN(amount) || amount <= 0) {
-      setError("Amount must be a positive number.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    try {
-      const data = await apiRequest(`${API_BASE_URL}/transactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          payer_id: newTransaction.payerId,
-          amount,
-          members: newTransaction.members,
-          remark: newTransaction.remark,
-        }),
-      });
-      setTransactions((prev) => [...prev, data]);
-      setNewTransaction({ payerId: "", amount: "", members: [] });
-    } catch (err) {
-      setError(`Failed to add transaction: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   // Handle form reset for editing
   const handleFormReset = () => {
