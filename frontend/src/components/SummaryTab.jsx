@@ -262,13 +262,6 @@ function SummaryTab({ users, transactions }) {
         <AppleCard className="p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium text-gray-900">Recent Transactions</h3>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-full font-medium hover:bg-blue-700 transition-colors"
-            >
-              Add Transaction
-            </motion.button>
           </div>
           <div className="space-y-4">
             {[...Array(summaryData.transaction_count)].map((_, i) => (
