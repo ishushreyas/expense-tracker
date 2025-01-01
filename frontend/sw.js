@@ -1,6 +1,6 @@
 const OFFLINE_VERSION = 1
 const CACHE_NAME = "offline"
-const OFFLINE_URL = "/offline.html"
+const OFFLINE_URL = "/assets/offline.html"
 
 self.addEventListener("install", ev => {
     ev.waitUntil(cacheOfflinePage())
