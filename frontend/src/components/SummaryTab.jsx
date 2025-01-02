@@ -268,13 +268,13 @@ function SummaryTab({ users, transactions }) {
             <h3 className="text-lg font-medium text-gray-900">Recent Transactions</h3>
           </div>
           <div className="space-y-4">
-            {[...Array(summaryData.transaction_count)].map((_, i) => (
-              <TransactionItem
-                key={i}
-                transaction={transactions[i]}
-                users={summaryData.users}
-              />
-            ))}
+            {transactions.map((transaction, i) => (
+		    <TransactionItem
+		    key={i}
+		    transaction={transaction}
+		    users={summaryData.users}
+		    />
+	    ))}
           </div>
         </AppleCard>
     </div>
