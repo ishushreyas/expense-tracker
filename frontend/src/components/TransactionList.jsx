@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { Trash2, FileEdit, AlertTriangle, Plus, X, Send, Download } from "lucide-react";
 import AddTransactionForm from "./AddTransactionForm";
 
@@ -63,16 +62,14 @@ const TransactionList = ({
           </svg>
           Transaction History
         </h3>
-	  <motion.button
-	  whileHover={{ scale: 1.05 }}
-	  whileTap={{ scale: 0.95 }}
-	  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-full font-medium hover:bg-blue-700 transition-colors"
+          <button 
+            className="bg-black text-white rounded-xl p-3 shadow-lg hover:bg-gray-800 transition-all duration-300 flex items-center space-x-2"
             onClick={() => setIsAddDialogOpen(true)}
             aria-label="Add Transaction"
           >
             <Plus size={24} />
             <span className="hidden md:inline">Add Transaction</span>
-          </motion.button>
+          </button>
       </div>
       
       {/* Rest of the existing rendering logic remains the same */}

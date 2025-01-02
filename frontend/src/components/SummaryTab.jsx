@@ -11,7 +11,8 @@ import {
   ChevronRight,
   AlertCircle,
   ArrowUpRight,
-  Settings
+  Settings,
+  Loader
 } from "lucide-react";
 import {
   LineChart,
@@ -27,6 +28,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
+import UserBalancesGrid from './UserBalancesGrid'
 
 // Function to fetch data from the API based on the date range
 const fetchData = async (startDate, endDate) => {
@@ -88,23 +90,6 @@ const MonthPicker = ({ currentDate, onNavigate }) => (
       <ChevronRight className="text-gray-600" size={20} />
     </motion.button>
   </div>
-);
-
-const UserBalanceCard = ({ label, userBalance, username }) => (
-  <AppleCard className="p-6">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-gray-100 rounded-2xl">
-            <Users className="text-gray-700" size={20} />
-          </div>
-        </div>
-        <p className="text-sm text-gray-500 mb-1">{label}</p>
-        <p className="text-2xl font-semibold text-gray-900">{username}</p>
-        <p className="text-2xl font-semibold text-gray-900">{`₹${userBalance.toFixed(2)}`}</p>
-      </div>
-    </div>
-  </AppleCard>
 );
 
 const TransactionItem = ({ transaction, users }) => {
@@ -185,8 +170,8 @@ function SummaryTab({ users, transactions }) {
 
   if (summaryData.loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+      <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-10">
+        <Loader className="animate-spin h-16 w-16 text-gray-500" />
       </div>
     );
   }
@@ -245,19 +230,38 @@ function SummaryTab({ users, transactions }) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {Object.entries(summaryData.user_balances).map(([userId, balance]) => {
-            const user = users.find(u => u.id === userId);
-            return (
-              <UserBalanceCard
-                key={userId}
-                label="Balance"
-                userBalance={balance}
-                username={user?.username || 'Unknown'}
+        <UserBalancesGrid
+                balances={summaryData.user_balances}
+                users={users}
               />
-            );
-          })}
         </div>
+        
+        <AppleCard className="p-6 mb-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">User Expenses</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={Object.entries(summaryData.user_expenses).map(([userId, balance]) => ({
+                      name: summaryData.users.find(user => user.id === userId)?.username || 'Unknown',
+                      value: balance
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {COLORS.map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </AppleCard>
 
         <AppleCard className="p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -273,7 +277,6 @@ function SummaryTab({ users, transactions }) {
             ))}
           </div>
         </AppleCard>
-      </div>
     </div>
   );
 }
