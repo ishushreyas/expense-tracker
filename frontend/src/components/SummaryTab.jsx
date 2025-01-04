@@ -54,14 +54,14 @@ const StatCard = ({ label, value, icon: Icon, trend, trendValue }) => (
           <div className="p-3 bg-gray-100 rounded-2xl">
             <Icon className="text-gray-700" size={20} />
           </div>
+        <p className="text-sm text-gray-500 mb-1">{label}</p>
+        </div>
           {trend && (
             <span className={`flex items-center text-sm font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
               {trend === 'up' ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
               {trendValue}%
             </span>
           )}
-        </div>
-        <p className="text-sm text-gray-500 mb-1">{label}</p>
         <p className="text-2xl font-semibold text-gray-900">{value}</p>
       </div>
     </div>
@@ -168,13 +168,13 @@ function SummaryTab({ users, transactions }) {
       });
   }, [selectedDate]);
 
-  if (summaryData.loading) {
+ /* if (summaryData.loading) {
     return (
-      <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-10">
+	    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-10">
         <Loader className="animate-spin h-16 w-16 text-gray-500" />
       </div>
     );
-  }
+  }*/
 
   const COLORS = ['#007AFF', '#5856D6', '#FF2D55', '#FF9500', '#34C759'];
 
@@ -230,11 +230,18 @@ function SummaryTab({ users, transactions }) {
           />
         </div>
 
+        <AppleCard className="p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium text-gray-900">User Balances</h3>
+          </div>
+          <div className="space-y-4">
         <UserBalancesGrid
                 balances={summaryData.user_balances}
                 users={users}
               />
         </div>
+	  </AppleCard>
+	</div>
         
         <AppleCard className="p-6 mb-8">
             <h3 className="text-lg font-medium text-gray-900 mb-6">User Expenses</h3>
@@ -268,11 +275,11 @@ function SummaryTab({ users, transactions }) {
             <h3 className="text-lg font-medium text-gray-900">Recent Transactions</h3>
           </div>
           <div className="space-y-4">
-            {transactions.map((transaction, i) => (
+	  {transactions.map((transaction, i) => (
 		    <TransactionItem
 		    key={i}
 		    transaction={transaction}
-		    users={summaryData.users}
+		    users={users}
 		    />
 	    ))}
           </div>

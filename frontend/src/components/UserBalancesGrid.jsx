@@ -2,8 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import {
   Users,
-  ArrowUpRight,
-  ArrowDownRight,
+  ArrowUp,
+  ArrowDown,
   Wallet
 } from "lucide-react";
 
@@ -13,24 +13,23 @@ const getBalanceColor = (balance) => {
   return "text-blue-600";
 };
 
-const UserBalanceCard = ({ label, userBalance, username }) => {
+const UserBalanceCard = ({ label, userBalance, username, email }) => {
   const balanceColor = getBalanceColor(userBalance);
   const isPositive = userBalance > 0;
 
   return (
     <motion.div
-      className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
-      whileHover={{ scale: 1.005 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-4 bg-gray-50/50 backdrop-blur-sm rounded-2xl hover:bg-gray-50/80 transition-colors"
     >
-      <div className={`bg-white px-6 pt-6 pb-6`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-white/80 backdrop-blur-sm rounded-xl">
+            <div className={`p-3 backdrop-blur-sm rounded-xl ${ isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               <Users className={balanceColor} size={20} />
             </div>
             <div>
-              <p className="text-sm text-gray-600">{label}</p>
+	      <p className="text-sm text-gray-600">{email}</p>
               <h3 className="text-lg font-semibold text-gray-900">{username}</h3>
             </div>
           </div>
@@ -38,18 +37,17 @@ const UserBalanceCard = ({ label, userBalance, username }) => {
             isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
           }`}>
             {isPositive ? 
-              <ArrowUpRight size={14} /> : 
-              <ArrowDownRight size={14} />
+              <ArrowUp size={14} /> : 
+              <ArrowDown size={14} />
             }
-            <Wallet size={14} />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-col items-baseline gap-2">
+              <p className="text-sm text-gray-600">{label}</p>
           <p className={`text-3xl font-bold ${balanceColor}`}>
             ₹{userBalance.toFixed(2)}
           </p>
         </div>
-      </div>
     </motion.div>
   );
 };
@@ -66,6 +64,7 @@ const UserBalancesGrid = ({ balances, users }) => {
             label="Balance"
             userBalance={balance}
             username={user?.username || 'Unknown'}
+	    email={user?.email || 'deleteduser@email.com'}
           />
         );
       })}
