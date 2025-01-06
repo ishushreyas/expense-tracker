@@ -13,7 +13,7 @@ const getBalanceColor = (balance) => {
   return "text-blue-600";
 };
 
-const UserBalanceCard = ({ label, userBalance, username, email }) => {
+const UserBalanceCard = ({ label, userBalance, userExpense, username, email }) => {
   const balanceColor = getBalanceColor(userBalance);
   const isPositive = userBalance > 0;
 
@@ -42,34 +42,49 @@ const UserBalanceCard = ({ label, userBalance, username, email }) => {
             }
           </div>
         </div>
-        <div className="flex flex-col items-baseline gap-2">
-              <p className="text-sm text-gray-600">{label}</p>
-          <p className={`text-3xl font-bold ${balanceColor}`}>
+        <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm text-gray-600">Balance</p>
+          <p className={`text-2xl font-bold ${balanceColor}`}>
             ₹{userBalance.toFixed(2)}
+          </p>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm text-gray-600">Expense</p>
+          <p className={"text-xl font-bold text-black"}>
+            ₹{userExpense.toFixed(2)}
           </p>
         </div>
     </motion.div>
   );
 };
 
-// Example usage in a grid
-const UserBalancesGrid = ({ balances, users }) => {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      {Object.entries(balances).map(([userId, balance]) => {
-        const user = users.find(u => u.id === userId);
-        return (
-          <UserBalanceCard
-            key={userId}
-            label="Balance"
-            userBalance={balance}
-            username={user?.username || 'Unknown'}
-	    email={user?.email || 'deleteduser@email.com'}
-          />
-        );
-      })}
-    </div>
-  );
+const UserBalancesGrid = ({ balances, expenses, users }) => {
+    // Create a map of user details for quick lookup
+    const userMap = Object.fromEntries(users.map(user => [user.id, user]));
+
+    // Transform expenses into a consistent array of objects for easier handling
+    const expenseMap = Object.fromEntries(
+        Object.entries(expenses).map(([id, value]) => [id, value])
+    );
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {Object.entries(balances).map(([userId, balance]) => {
+                const user = userMap[userId] || {}; // Fallback to empty object if user not found
+                const expense = expenseMap[userId] || 0; // Default expense to 0 if not found
+
+                return (
+                    <UserBalanceCard
+                        key={userId}
+                        userBalance={balance}
+                        userExpense={expense}
+                        username={user.username || "Unknown"} // Default username
+                        email={user.email || "deleteduser@email.com"} // Default email
+                    />
+                );
+            })}
+        </div>
+    );
 };
 
 export default UserBalancesGrid;

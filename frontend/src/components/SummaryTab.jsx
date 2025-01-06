@@ -54,14 +54,14 @@ const StatCard = ({ label, value, icon: Icon, trend, trendValue }) => (
           <div className="p-3 bg-gray-100 rounded-2xl">
             <Icon className="text-gray-700" size={20} />
           </div>
-        <p className="text-sm text-gray-500 mb-1">{label}</p>
+        <p className="text-lg text-black mb-1">{label}</p>
         </div>
-          {trend && (
+          {/*trend && (
             <span className={`flex items-center text-sm font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
               {trend === 'up' ? <TrendingUp size={14} className="mr-1" /> : <TrendingDown size={14} className="mr-1" />}
               {trendValue}%
             </span>
-          )}
+          )*/}
         <p className="text-2xl font-semibold text-gray-900">{value}</p>
       </div>
     </div>
@@ -237,13 +237,15 @@ function SummaryTab({ users, transactions }) {
           <div className="space-y-4">
         <UserBalancesGrid
                 balances={summaryData.user_balances}
+	        expenses={summaryData.user_expenses}
                 users={users}
               />
         </div>
 	  </AppleCard>
 	</div>
         
-        <AppleCard className="p-6 mb-8">
+	  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+	  <AppleCard className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-6">User Expenses</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -270,12 +272,12 @@ function SummaryTab({ users, transactions }) {
             </div>
           </AppleCard>
 
-        <AppleCard className="p-6 mb-8">
+        <AppleCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium text-gray-900">Recent Transactions</h3>
           </div>
           <div className="space-y-4">
-	  {transactions.map((transaction, i) => (
+	  {transactions.slice(0, 3).map((transaction, i) => (
 		    <TransactionItem
 		    key={i}
 		    transaction={transaction}
@@ -284,6 +286,7 @@ function SummaryTab({ users, transactions }) {
 	    ))}
           </div>
         </AppleCard>
+	  </div>
     </div>
   );
 }
