@@ -328,7 +328,6 @@ const handleDeletePayment = async (paymentId) => {
 
   useEffect(() => {
     fetchUsers();
-    fetchSummary();
   }, []);
 
   useEffect(() => {

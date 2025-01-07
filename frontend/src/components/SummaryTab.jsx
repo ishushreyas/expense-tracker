@@ -156,9 +156,8 @@ function SummaryTab({ users, transactions }) {
   };
 
   useEffect(() => {
-    const startDate = selectedDate.toISOString().split('T')[0];
+    const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1).toISOString().split('T')[0];
     const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).toISOString().split('T')[0];
-
     fetchData(startDate, endDate)
       .then(data => {
         setSummaryData({ ...data, loading: false });
