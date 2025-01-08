@@ -2,8 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import {
   Users,
-  ArrowUp,
-  ArrowDown,
+  ArrowUpRight,
+  ArrowDownRight,
   Wallet
 } from "lucide-react";
 
@@ -34,11 +34,11 @@ const UserBalanceCard = ({ label, userBalance, userExpense, username, email }) =
             </div>
           </div>
           <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${
-            isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            isPositive ? 'text-green-700' : 'text-red-700'
           }`}>
             {isPositive ? 
-              <ArrowUp size={14} /> : 
-              <ArrowDown size={14} />
+              <ArrowUpRight size={20} /> : 
+              <ArrowDownRight size={20} />
             }
           </div>
         </div>

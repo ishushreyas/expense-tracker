@@ -26,6 +26,17 @@ func initFirebase() (*auth.Client, error) {
 	return app.Auth(context.Background())
 }
 
+func initStorage() *storage.Client {
+	// Initialize Firebase Storage client
+	ctx := context.Background()
+	opt := option.WithCredentialsFile("/etc/secrets/serviceAccountKey.json")
+	storageClient, err := storage.NewClient(ctx, opt)
+	if err != nil {
+		log.Fatalf("Failed to create storage client: %v", err)
+	}
+	return storageClient
+}
+
 // Extract ID token from the request body
 func getIDTokenFromBody(r *http.Request) (string, error) {
 	var data map[string]string
@@ -123,6 +134,9 @@ func main() {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
 	defer db.CloseDatabase()
+	
+	storageClient := initStorage()
+	defer storageClient.Close()
 
 	// Initialize repositories and controllers
 	transactionRepo := db.NewTransactionRepository(dbPool)
@@ -169,6 +183,8 @@ func main() {
 	r.HandleFunc("/payments/{id}", handlers.DeletePayment).Methods("DELETE")
 	r.HandleFunc("/payments/{id}/soft-delete", handlers.SoftDeletePayment).Methods("DELETE")
 	r.HandleFunc("/payment-summary", handlers.GeneratePaymentSummary).Methods("GET")
+	h := handlers.NewHandler(dbPool, storageClient, "FIREBASE_BUCKET")
+	h.SetupRoutes(r)
 
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

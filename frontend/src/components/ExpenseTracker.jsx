@@ -14,7 +14,7 @@ import ErrorNotification from "./ErrorNotification";
 import SummaryTab from "./SummaryTab";
 import Tabs from "./Tabs";
 import TransactionList from "./TransactionList";
-import UsersTab from "./UsersTab";
+import UpdatesTab from "./UpdatesTab";
 import TransactionDetails from "./TransactionDetails"; 
 import { Payments } from './Payments';
 
@@ -371,7 +371,7 @@ const handleDeletePayment = async (paymentId) => {
           users={users}
         />
       )}
-      {activeTab === "payments" && <Payments users={users} currentUser={currentUser} />}
+      {activeTab === "updates" && <UpdatesTab currentUser={users.find(user => user.email === currentUser.email)} />}
     </div>
     {loading && (
       <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
